@@ -20,6 +20,7 @@
 #include <linux/errno.h>
 #include <linux/err.h>
 #include <linux/kvm_host.h>
+
 #include <linux/list.h>
 #include <linux/module.h>
 #include <linux/vmalloc.h>
@@ -1141,11 +1142,11 @@ long kvm_arch_vm_ioctl(struct file *filp,
 	}
 }
 
-static unsigned long get_hyp_vector(void)
+unsigned long get_hyp_vector(void)
 {
 #ifdef __TRULY__
 	tp_info("Assign Truly vector\n");
-	return (unsigned long) __truly_vectors;
+	return (unsigned long)kvm_ksym_ref(__truly_vectors);
 #else
 	return (unsigned long)kvm_ksym_ref(__kvm_hyp_vector);
 #endif
@@ -1310,7 +1311,8 @@ static int init_subsystems(void)
 	/*
 	 * Enable hardware so that subsystem initialisation can access EL2.
 	 */
-	on_each_cpu(_kvm_arch_hardware_enable, NULL, 1);
+	truly_init();
+	_kvm_arch_hardware_enable(NULL);
 #ifdef __TRULY__
 	return err;
 #endif
@@ -1400,7 +1402,6 @@ static int init_hyp_mode(void)
 
 		per_cpu(kvm_arm_hyp_stack_page, cpu) = stack_page;
 	}
-
 	/*
 	 * Map the Hyp-code called directly from the host
 	 */

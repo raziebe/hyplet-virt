@@ -187,7 +187,6 @@ struct truly_vm *get_tvm(void);
 void EncryptInit(struct truly_vm *tvm);
 void tp_run_vm(void *);
 void truly_run_vm(void *);
-long tp_call_hyp(void *hyper_func, ...);
 unsigned long truly_get_exception_level(void);
 unsigned long truly_get_tcr_el1(void);
 unsigned long truly_get_hcr_el2(void);
@@ -215,6 +214,10 @@ int is_addr_mapped(long addr,struct truly_vm *tv);
 unsigned long read_sctlr_el2(void);
 unsigned long tp_clear_cache(pte_t* addr,long size);
 void truly_map_tvm(void);
+unsigned long get_hyp_vector(void);
+u64 __kvm_call_hyp(void *hypfn, ...);
+#define tp_call_hyp(f, ...) __kvm_call_hyp(kvm_ksym_ref(f), ##__VA_ARGS__)
+
 
 static inline long cycles(void)
 {

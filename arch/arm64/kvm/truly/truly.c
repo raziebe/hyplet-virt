@@ -12,6 +12,8 @@
 #include <linux/slab.h>
 #include <asm/page.h>
 #include <linux/vmalloc.h>
+#include <asm/kvm_asm.h>
+
 
 
 #define __TRULY_DEBUG__
@@ -19,21 +21,6 @@
 #include <linux/tp_mmu.h>
 
 DEFINE_PER_CPU(struct truly_vm, TVM);
-
-
-phys_addr_t at_el0(unsigned long addr)
-{
-	phys_addr_t ret_addr;
-
-    asm ("mov x0, %0\n"
-        "at S1E0R,x0\n"
-        "mrs x0, par_el1"
-        		:"=r" (ret_addr)
-        		: "r" (addr));
-
-   return ret_addr;
-}
-
 
 struct truly_vm *get_tvm(void)
 {
@@ -191,10 +178,12 @@ int truly_init(void)
 	int t0sz;
 	int t1sz;
 	int ips;
+	void *s, *e;
 	int pa_range;
 	long id_aa64mmfr0_el1;
 	struct truly_vm *_tvm;
 	int cpu = 0;
+	unsigned long temp;
 
 	id_aa64mmfr0_el1 = truly_get_mfr();
 	tcr_el1 = truly_get_tcr_el1();
@@ -206,16 +195,21 @@ int truly_init(void)
 	
 	_tvm = get_tvm();
 	memset(_tvm, 0x00, sizeof(*_tvm));
-	tp_create_pg_tbl(_tvm);
-	make_vtcr_el2(_tvm);
 	make_hcr_el2(_tvm);
+	if (_tvm->hcr_el2 & HCR_VM ) {
+		tp_create_pg_tbl(_tvm);
+	} else{
+		tp_info(" Skip VM\n");
+	}
+	make_vtcr_el2(_tvm);
 	make_mdcr_el2(_tvm);
 
 	_tvm->enc = kmalloc(sizeof(struct encrypt_tvm), GFP_ATOMIC);
 	encryptInit(_tvm->enc);
-
-	err = create_hyp_mappings((char *)_tvm->enc,
-				((char *) _tvm->enc) + sizeof(struct encrypt_tvm));
+	s = kvm_ksym_ref(_tvm->enc);
+	temp = (unsigned long) ((char *) _tvm->enc) + sizeof(struct encrypt_tvm);
+	e = kvm_ksym_ref( temp );
+	err = create_hyp_mappings(s, e);
 	if (err) {
 		tp_err("Failed to map encrypted\n");
 	} else {
@@ -241,7 +235,7 @@ void truly_map_tvm(void)
 	int err;
 	struct truly_vm *tv = get_tvm();
 
-	err = create_hyp_mappings(tv, tv + 1);
+	err = create_hyp_mappings( kvm_ksym_ref(tv), kvm_ksym_ref(tv + 1));
 	if (err) {
 		tp_err("Failed to map tvm");
 	} else {
@@ -256,15 +250,15 @@ void tp_run_vm(void *x)
 	unsigned long rc;
 	unsigned long sctlr_el2;
 	unsigned long vbar_el2;
-	unsigned long vbar_el2_current =
-	    (unsigned long) (KERN_TO_HYP(__truly_vectors));
+	unsigned long curr_vbar_el2 = KERN_TO_HYP(get_hyp_vector());
 
 	vbar_el2 = truly_get_vectors();
 
-	if (vbar_el2 != vbar_el2_current) {
+	if (vbar_el2 != curr_vbar_el2) {
 		tp_info("vbar_el2 should restore\n");
-		truly_set_vectors(vbar_el2);
+		truly_set_vectors(curr_vbar_el2);
 	}
+
 	truly_map_tvm();
 	sctlr_el2 = tp_call_hyp(read_sctlr_el2);
 	make_mair_el2(tvm);
@@ -395,5 +389,4 @@ int __hyp_text  tp_hyp_memset(char *dst,char tag,int size)
 
 EXPORT_SYMBOL_GPL(truly_get_vectors);
 EXPORT_SYMBOL_GPL(truly_get_hcr_el2);
-EXPORT_SYMBOL_GPL(tp_call_hyp);
 EXPORT_SYMBOL_GPL(truly_init);
