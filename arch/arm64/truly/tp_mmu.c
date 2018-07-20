@@ -670,15 +670,3 @@ void make_vtcr_el2(struct truly_vm *tvm)
 
 }
 
-void hyp_user_unmap(unsigned long umem,int size,int user)
-{
-       int sz_page = PAGE_ALIGN(size);
-
-       if (user)
-            //unmap_range(NULL, hyp_pgd, umem, sz_page);
-   	    unmap_hyp_range(hyp_pgd, umem, sz_page);
-       else
-            // unmap_range(NULL, hyp_pgd, KERN_TO_HYP(umem) , sz_page);
-   	    unmap_hyp_range(hyp_pgd, KERN_TO_HYP(umem), sz_page);
-}
-

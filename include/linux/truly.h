@@ -75,6 +75,11 @@
 #define HYP_PAGE_OFFSET         (PAGE_OFFSET & HYP_PAGE_OFFSET_MASK)
 #define KERN_TO_HYP(kva)        ((unsigned long)kva - PAGE_OFFSET + HYP_PAGE_OFFSET)
 
+/* Supported Processor Types */
+#define TP_ARM_TARGET_CORTEX_A15	0
+#define TP_ARM_TARGET_CORTEX_A7	1
+#define TP_ARM_NUM_TARGETS		2
+
 #define ESR_ELx_EC_SVC_64 0b10101
 #define ESR_ELx_EC_SVC_32 0b10001
 
@@ -215,8 +220,7 @@ unsigned long read_sctlr_el2(void);
 unsigned long tp_clear_cache(pte_t* addr,long size);
 void truly_map_tvm(void);
 unsigned long get_hyp_vector(void);
-u64 __kvm_call_hyp(void *hypfn, ...);
-#define tp_call_hyp(f, ...) __kvm_call_hyp(kvm_ksym_ref(f), ##__VA_ARGS__)
+long tp_call_hyp(void *hyper_func, ...);
 
 
 static inline long cycles(void)

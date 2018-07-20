@@ -2,10 +2,8 @@
 #include <asm/assembler.h>
 #include <asm/memory.h>
 #include <asm/asm-offsets.h>
-#include <asm/kvm.h>
-#include <asm/kvm_asm.h>
-#include <asm/kvm_arm.h>
-#include <asm/kvm_mmu.h>
+#include "hyp_mmu.h"
+#include "tp_hyp_flags.h"
 
 #define HYP_PAGE_OFFSET_SHIFT   VA_BITS
 #define HYP_PAGE_OFFSET_MASK    ((UL(1) << HYP_PAGE_OFFSET_SHIFT) - 1)
@@ -515,6 +513,12 @@ ENTRY(el2_mmu_fault_bh)
 
 	eret
 ENDPROC(el2_mmu_fault_bh)
+
+ENTRY(tp_call_hyp)
+        hvc     #0
+        ret
+ENDPROC(tp_call_hyp)
+
 
 
 // http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/CHDEEDDC.html
