@@ -79,7 +79,7 @@ void make_hstr_el2(struct truly_vm *tvm)
 
 void make_hcr_el2(struct truly_vm *tvm)
 {
-	tvm->hcr_el2 =   HCR_RW | HCR_VM ;// HCR_TRULY_FLAGS;
+	tvm->hcr_el2 =   HCR_RW ; // | HCR_VM ;// HCR_TRULY_FLAGS;
 }
 
 void make_mdcr_el2(struct truly_vm *tvm)
@@ -175,12 +175,10 @@ int truly_init(void)
 	int t0sz;
 	int t1sz;
 	int ips;
-	void *s, *e;
 	int pa_range;
 	long id_aa64mmfr0_el1;
 	struct truly_vm *_tvm;
 	int cpu = 0;
-	unsigned long temp;
 
 	id_aa64mmfr0_el1 = truly_get_mfr();
 	tcr_el1 = truly_get_tcr_el1();
@@ -230,7 +228,7 @@ void truly_map_tvm(void)
 	int err;
 	struct truly_vm *tv = get_tvm();
 
-	err = create_hyp_mappings( kvm_ksym_ref(tv), kvm_ksym_ref(tv + 1));
+	err = create_hyp_mappings( tv, tv + 1 );
 	if (err) {
 		tp_err("Failed to map tvm");
 	} else {

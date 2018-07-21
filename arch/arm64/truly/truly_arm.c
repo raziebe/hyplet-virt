@@ -46,9 +46,6 @@
 #include <linux/truly.h>
 #include "hyp_mmu.h"
 
-#ifdef REQUIRES_VIRT
-__asm__(".arch_extension	virt");
-#endif
 
 static DEFINE_PER_CPU(unsigned long, tp_arm_hyp_stack_page);
 
@@ -132,6 +129,12 @@ static int init_hyp_mode(void)
 		tp_err("Cannot map world-switch code\n");
 		goto out_err;
 	}
+
+    err = create_hyp_mappings(__hyp_idmap_text_start,  __hyp_idmap_text_end);
+    if (err) {
+            tp_err("Cannot map world-switch code\n");
+            return -1;
+    }
 
 //	err = create_hyp_mappings(__start_rodata,
 //				  __end_rodata), PAGE_HYP_RO);
@@ -240,13 +243,14 @@ static int tp_arch_init(void)
 	}
 
 	tp_info("HYP mode is available\n");
+	err = init_hyp_mode();
+	if (err)
+		return -1;
+
 	err = truly_init();
 	if (err)
 		return err;
 
-	err = init_hyp_mode();
-	if (err)
-		return -1;
 
 	err = init_subsystems();
 	if (err)
