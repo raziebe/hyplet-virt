@@ -165,17 +165,8 @@ out_err:
 	tp_err("error initializing Hyp mode: %d\n", err);
 	return err;
 }
-
-#define ARM_CPU_PART_CORTEX_A7		0x4100c070
-#define ARM_CPU_PART_CORTEX_A15		0x4100c0f0
-#define ARM_CPU_PART_MASK               0xff00fff0
-
-static inline unsigned int __attribute_const__ read_cpuid_part(void)
-{
-        return read_cpuid_id() & ARM_CPU_PART_MASK;
-}
-
-int tp_target_cpu(void)
+#if 0 // older kernels
+int __attribute_const__ tp_target_cpu(void)
 {
 	switch (read_cpuid_part()) {
 	case ARM_CPU_PART_CORTEX_A7:
@@ -187,6 +178,41 @@ int tp_target_cpu(void)
 	}
 }
 
+#else
+
+#define ARM_TARGET_GENERIC_V8 1
+
+int __attribute_const__ tp_target_cpu(void)
+{
+        unsigned long implementor = read_cpuid_implementor();
+        unsigned long part_number = read_cpuid_part_number();
+
+        switch (implementor) {
+        	case ARM_CPU_IMP_ARM:
+                switch (part_number) {
+                case ARM_CPU_PART_AEM_V8:
+                        return ARM_CPU_PART_AEM_V8;
+                case ARM_CPU_PART_FOUNDATION:
+                		return ARM_CPU_PART_FOUNDATION;
+                case ARM_CPU_PART_CORTEX_A53:
+                        return ARM_CPU_PART_CORTEX_A53;
+                case ARM_CPU_PART_CORTEX_A57:
+                        return ARM_CPU_PART_CORTEX_A57;
+                }
+                break;
+            case ARM_CPU_IMP_APM:
+                        switch (part_number) {
+                        case APM_CPU_PART_POTENZA:
+                                return APM_CPU_PART_POTENZA;
+                        };
+                        break;
+         };
+        /* Return a default generic target */
+        return ARM_TARGET_GENERIC_V8;
+}
+
+#endif
+
 static void check_tp_target_cpu(void *ret)
 {
 	*(int *)ret = tp_target_cpu();
@@ -195,7 +221,7 @@ static void check_tp_target_cpu(void *ret)
 /**
  * Initialize Hyp-mode and memory mappings on all CPUs.
  */
-int tp_arch_init(void *opaque)
+static int tp_arch_init(void)
 {
 	int err;
 	int ret, cpu;
@@ -213,6 +239,7 @@ int tp_arch_init(void *opaque)
 		}
 	}
 
+	tp_info("HYP mode is available\n");
 	err = truly_init();
 	if (err)
 		return err;
@@ -232,7 +259,7 @@ int tp_arch_init(void *opaque)
 static int truly_boot_start(void)
 {
 	int rc = 0;
-	
+	rc = tp_arch_init();
 	return rc;
 }
 

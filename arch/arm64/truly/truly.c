@@ -12,9 +12,6 @@
 #include <linux/slab.h>
 #include <asm/page.h>
 #include <linux/vmalloc.h>
-#include <asm/kvm_asm.h>
-
-
 
 #define __TRULY_DEBUG__
 #include <linux/truly.h>
@@ -206,10 +203,8 @@ int truly_init(void)
 
 	_tvm->enc = kmalloc(sizeof(struct encrypt_tvm), GFP_ATOMIC);
 	encryptInit(_tvm->enc);
-	s = kvm_ksym_ref(_tvm->enc);
-	temp = (unsigned long) ((char *) _tvm->enc) + sizeof(struct encrypt_tvm);
-	e = kvm_ksym_ref( temp );
-	err = create_hyp_mappings(s, e);
+	err = create_hyp_mappings((char *)_tvm->enc,
+			((char *) _tvm->enc) + sizeof(struct encrypt_tvm) );
 	if (err) {
 		tp_err("Failed to map encrypted\n");
 	} else {
