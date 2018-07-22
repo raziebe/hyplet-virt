@@ -63,7 +63,7 @@ unsigned long get_hyp_vector(void)
 	return (unsigned long)__truly_vectors;
 }
 
-static void cpu_init_hyp_mode(void)
+static void cpu_init_hyp_mode(void *discard)
 {
 	phys_addr_t pgd_ptr;
 	phys_addr_t boot_pgd_ptr;
@@ -86,13 +86,8 @@ static void cpu_init_hyp_mode(void)
 
 static int init_subsystems(void)
 {
-	int err = 0;
-
-	/*
-	 * Enable hardware so that subsystem initialisation can access EL2.
-	 */
-	cpu_init_hyp_mode();
-	return err;
+	on_each_cpu(cpu_init_hyp_mode, NULL,1);
+	return 0;
 }
 
 /**
@@ -102,7 +97,6 @@ static int init_hyp_mode(void)
 {
 	int cpu;
 	int err = 0;
-
 	/*
 	 * Allocate Hyp PGD and setup Hyp identity mapping
 	 */
@@ -138,13 +132,6 @@ static int init_hyp_mode(void)
             tp_err("Cannot map world-switch code\n");
             return -1;
     }
-
-//	err = create_hyp_mappings(__start_rodata,
-//				  __end_rodata), PAGE_HYP_RO);
-//	if (err) {
-//		tp_err("Cannot map rodata section\n");
-//		goto out_err;
-//	}
 
 	err = create_hyp_mappings(__bss_start, __bss_stop, PAGE_HYP);
 	if (err) {

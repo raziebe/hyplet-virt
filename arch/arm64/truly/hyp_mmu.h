@@ -60,7 +60,7 @@ phys_addr_t tp_get_idmap_vector(void);
 #define KVM_PHYS_MASK	(KVM_PHYS_SIZE - 1UL)
 
 int create_hyp_mappings(void *, void *,pgprot_t );
-int create_hyp_user_mappings(void *from, void *to);
+
 int create_hyp_io_mappings(void *from, void *to, phys_addr_t);
 void free_boot_hyp_pgd(void);
 void free_hyp_pgds(void);

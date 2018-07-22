@@ -65,11 +65,11 @@ long truly_get_mfr(void)
  */
 void make_mair_el2(struct truly_vm *tvm)
 {
-//	unsigned long mair_el2;
+	unsigned long mair_el2;
 
-//	mair_el2 = tp_call_hyp(read_mair_el2);
-	//tvm->mair_el2 = (mair_el2 & 0x000000FF00000000L ) | 0x000000FF00000000L; //
-	tvm->mair_el2 = 0xFFFFFFFFFFFFFFFFL; 
+	mair_el2 = tp_call_hyp(read_mair_el2);
+	tvm->mair_el2 = (mair_el2 & 0x000000FF00000000L ) | 0x000000FF00000000L; //
+	//tvm->mair_el2 = 0xFFFFFFFFFFFFFFFFL;
  	tp_call_hyp(set_mair_el2, tvm->mair_el2);
 }
 
@@ -80,7 +80,7 @@ void make_hstr_el2(struct truly_vm *tvm)
 
 void make_hcr_el2(struct truly_vm *tvm)
 {
-	tvm->hcr_el2 =   HCR_RW ; // | HCR_VM ;// HCR_TRULY_FLAGS;
+	tvm->hcr_el2 =   HCR_RW | HCR_VM ;// HCR_TRULY_FLAGS;
 }
 
 void make_mdcr_el2(struct truly_vm *tvm)
@@ -305,15 +305,13 @@ void set_mdcr_el2(void *dummy)
 	struct truly_vm *tvm = get_tvm();
 	tvm->mdcr_el2 = 0x100L;
 	tp_call_hyp(truly_set_mdcr_el2);
+
+	tp_info("%s\n",__func__);
 }
 
 void truly_set_trap(void)
 {
 	on_each_cpu(set_mdcr_el2, NULL, 0);
-
-	tp_info("ttbr0_el1=%lx tpidr_el0=%lx\n",
-			truly_get_ttbr0_el1(),
-			truly_get_tpidr_el0() );
 }
 
 void reset_mdcr_el2(void *dummy)

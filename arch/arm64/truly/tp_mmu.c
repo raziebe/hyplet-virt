@@ -45,28 +45,26 @@ void tp_map_vmas(struct _IMAGE_FILE* image_file)
         for (;vma ; vma = vma->vm_next) {
 
         	if (is_addr_mapped(vma->vm_start, get_tvm())){
-        		tp_debug("%s: %lx already mapped\n",
+        		tp_info("%s: %lx already mapped\n",
         				__func__,vma->vm_start);
         		continue;
         	}
         	if (vma->vm_flags & VM_EXEC) {
-                tp_debug("Truly mapping executable at %lx %lx\n",
-                			vma->vm_start,
-							vma->vm_flags);
-        		vma_map_hyp(vma);
+        		vma_map_hyp(vma, PAGE_HYP_EXEC);
                 continue;
         	}
 
         	if (vma->vm_flags == VM_STACK_FLAGS) {
-        		tp_debug("Truly mapping stack at %lx\n",
-        				vma->vm_end - PAGE_SIZE);
-        		map_user_space_data((void *)(vma->vm_end - PAGE_SIZE), PAGE_SIZE);
+        		map_user_space_data(
+        				(void *)(vma->vm_end - PAGE_SIZE),
+        				PAGE_SIZE,
+						PAGE_HYP);
         	}
         }
 }
 
 
-void vma_map_hyp(struct vm_area_struct* vma)
+void vma_map_hyp(struct vm_area_struct* vma,pgprot_t prot)
 {
 	struct truly_vm *tv;
 	int vma_size;
@@ -82,18 +80,18 @@ void vma_map_hyp(struct vm_area_struct* vma)
 			 vma->vm_start,  vma->vm_start + vma_size );
 
 		map_user_space_data((void *)tv->enc->seg[0].pad_data,
-		                       tv->enc->seg[0].size);
+		                       tv->enc->seg[0].size, prot);
 		return;
 	}
-	map_user_space_data((void *)vma->vm_start , PAGE_SIZE);
+	map_user_space_data((void *)vma->vm_start , PAGE_SIZE,prot);
 }
 
 void unmap_user_space_data(unsigned long umem,int size)
 {
-	hyp_user_unmap(umem,  size,1);
+	hyp_user_unmap(umem,  size, 1);
 	tp_debug("pid %d unmapped %lx \n", current->pid, umem);
 }
-
+/*
 int mmu_map_vma(unsigned long addr, struct truly_vm *tv)
 {
 	int size;
@@ -116,12 +114,12 @@ int mmu_map_vma(unsigned long addr, struct truly_vm *tv)
     	if (!(addr >= vma->vm_start && addr <= vma->vm_end) ){
     		continue;
     	}
-    	map_user_space_data( (void *)vma->vm_start, size);
+    	map_user_space_data( (void *)vma->vm_start, size, PAGE_HYP);
     	return 0;
     }
     return (-1);
 }
-
+*/
 int mmu_map_page(unsigned long addr, struct truly_vm *tv)
 {
     struct vm_area_struct* vma;
@@ -133,7 +131,7 @@ int mmu_map_page(unsigned long addr, struct truly_vm *tv)
     	return 0;
     }
    // __do_page_fault
-    map_user_space_data( (void *)addr, PAGE_SIZE);
+    map_user_space_data( (void *)addr, PAGE_SIZE, PAGE_HYP);
     return 0;
 }
 /*
@@ -153,7 +151,7 @@ void el2_mmu_fault_th(void)
 		panic("Faulted in an unknown area");
 
 	if (tv->far_el2)
-		map_user_space_data((void *)tv->far_el2, 8);
+		map_user_space_data((void *)tv->far_el2, 8 , PAGE_HYP);
 //
 // go back to the hyp to restore back to hyp mode
 //
@@ -297,7 +295,7 @@ extern pgd_t *hyp_pgd;
  * in Hyp-mode mapping (modulo HYP_PAGE_OFFSET) to the same underlying
  * physical pages.
  */
-int create_hyp_user_mappings(void *from, void *to)
+int create_hyp_user_mappings(void *from, void *to,pgprot_t prot)
 {
 	unsigned long virt_addr;
 	unsigned long fr = (unsigned long)from;
@@ -319,7 +317,7 @@ int create_hyp_user_mappings(void *from, void *to)
 		err = __create_hyp_mappings(hyp_pgd, virt_addr,
 					    virt_addr + PAGE_SIZE,
 					    pfn,
-						PAGE_HYP);
+						prot);
 		if (err) {
 			printk("TP: Failed to map %p\n",(void *)virt_addr);
 			return err;
@@ -349,7 +347,7 @@ unsigned long kvm_uaddr_to_pfn(unsigned long uaddr)
  * Called from execve context.
  * Map the user
  */
-void map_user_space_data(void *umem,int size)
+void map_user_space_data(void *umem,int size,pgprot_t prot)
 {
 	int err;
 	struct hyp_addr* tmp;
@@ -375,7 +373,7 @@ void map_user_space_data(void *umem,int size)
 	printk("XXXXXXXXXXXXXXXXXXXXXXXXX %lx\n",end_addr);
 
 map:
-	err = create_hyp_user_mappings(umem, umem + size);
+	err = create_hyp_user_mappings(umem, umem + size,prot);
 	if (err){
 			tp_err(" failed to map ttbr0_el2\n");
 			return;
