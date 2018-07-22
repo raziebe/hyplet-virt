@@ -456,7 +456,7 @@ static phys_addr_t tp_kaddr_to_phys(void *kaddr)
  * in Hyp-mode mapping (modulo HYP_PAGE_OFFSET) to the same underlying
  * physical pages.
  */
-int create_hyp_mappings(void *from, void *to)
+int create_hyp_mappings(void *from, void *to,pgprot_t prot)
 {
 	phys_addr_t phys_addr;
 	unsigned long virt_addr;
@@ -473,7 +473,7 @@ int create_hyp_mappings(void *from, void *to)
 		err = __create_hyp_mappings(hyp_pgd, virt_addr,
 					    virt_addr + PAGE_SIZE,
 					    __phys_to_pfn(phys_addr),
-					    PAGE_HYP);
+					    prot);
 		if (err)
 			return err;
 	}
@@ -523,7 +523,7 @@ int tp_mmu_init(void)
 	err = 	__create_hyp_mappings(boot_hyp_pgd,
 				      hyp_idmap_start, hyp_idmap_end,
 				      __phys_to_pfn(hyp_idmap_start),
-				      PAGE_HYP);
+				      PAGE_HYP_EXEC);
 
 	if (err) {
 		tp_err("Failed to idmap %lx-%lx\n",
@@ -535,7 +535,7 @@ int tp_mmu_init(void)
 	err = 	__create_hyp_mappings(boot_hyp_pgd,
 				      TRAMPOLINE_VA, TRAMPOLINE_VA + PAGE_SIZE,
 				      __phys_to_pfn(hyp_idmap_start),
-				      PAGE_HYP);
+				      PAGE_HYP_EXEC);
 	if (err) {
 		tp_err("Failed to map trampoline @%lx into boot HYP pgd\n",
 			TRAMPOLINE_VA);
@@ -546,7 +546,7 @@ int tp_mmu_init(void)
 	err = 	__create_hyp_mappings(hyp_pgd,
 				      TRAMPOLINE_VA, TRAMPOLINE_VA + PAGE_SIZE,
 				      __phys_to_pfn(hyp_idmap_start),
-				      PAGE_HYP);
+				      PAGE_HYP_EXEC);
 	if (err) {
 		tp_err("Failed to map trampoline @%lx into runtime HYP pgd\n",
 			TRAMPOLINE_VA);

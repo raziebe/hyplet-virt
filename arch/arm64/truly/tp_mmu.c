@@ -25,6 +25,7 @@
 #include <linux/delay.h>
 #include <linux/truly.h>
 #include <linux/tp_mmu.h>
+#include "hyp_mmu.h"
 
 #include "tp_types.h"
 #include "linux_kernfile.h"
@@ -213,7 +214,7 @@ void tp_prepare_process(struct _IMAGE_FILE* image_file)
 	memcpy(&tv->enc->seg[0].size,tv->enc->seg[0].enc_data + 0x24,sizeof(int));
 
 	err = create_hyp_mappings(tv->enc->seg[0].enc_data,
- 			tv->enc->seg[0].enc_data + tv->enc->seg[0].size);
+ 			tv->enc->seg[0].enc_data + tv->enc->seg[0].size, PAGE_HYP);
 	if (err){
 		tp_err(" failed to map tp_section\n");
 		return;
@@ -233,7 +234,8 @@ void tp_prepare_process(struct _IMAGE_FILE* image_file)
 
 	memset(tv->enc->seg[0].decrypted_data, 0x00, tv->enc->seg[0].size);
 	err = create_hyp_mappings(tv->enc->seg[0].decrypted_data,
- 		tv->enc->seg[0].decrypted_data + tv->enc->seg[0].size);
+ 				tv->enc->seg[0].decrypted_data + tv->enc->seg[0].size, 
+				PAGE_HYP);
 	if (err){
 			tp_err(" failed to map the decrypted data\n");
 			return;

@@ -12,6 +12,7 @@
 #include <linux/slab.h>
 #include <asm/page.h>
 #include <linux/vmalloc.h>
+#include "hyp_mmu.h"
 
 #define __TRULY_DEBUG__
 #include <linux/truly.h>
@@ -64,7 +65,7 @@ long truly_get_mfr(void)
  */
 void make_mair_el2(struct truly_vm *tvm)
 {
-	unsigned long mair_el2;
+//	unsigned long mair_el2;
 
 //	mair_el2 = tp_call_hyp(read_mair_el2);
 	//tvm->mair_el2 = (mair_el2 & 0x000000FF00000000L ) | 0x000000FF00000000L; //
@@ -202,7 +203,7 @@ int truly_init(void)
 	_tvm->enc = kmalloc(sizeof(struct encrypt_tvm), GFP_ATOMIC);
 	encryptInit(_tvm->enc);
 	err = create_hyp_mappings((char *)_tvm->enc,
-			((char *) _tvm->enc) + sizeof(struct encrypt_tvm) );
+			((char *) _tvm->enc) + sizeof(struct encrypt_tvm), PAGE_HYP );
 	if (err) {
 		tp_err("Failed to map encrypted\n");
 	} else {
@@ -228,7 +229,7 @@ void truly_map_tvm(void)
 	int err;
 	struct truly_vm *tv = get_tvm();
 
-	err = create_hyp_mappings( tv, tv + 1 );
+	err = create_hyp_mappings( tv, tv + 1 , PAGE_HYP );
 	if (err) {
 		tp_err("Failed to map tvm");
 	} else {

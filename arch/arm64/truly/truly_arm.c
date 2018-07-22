@@ -54,8 +54,7 @@ static inline void __cpu_init_hyp_mode(phys_addr_t boot_pgd_ptr,
                                        unsigned long hyp_stack_ptr,
                                        unsigned long vector_ptr)
 {
-	tp_call_hyp(NULL, 0, boot_pgd_ptr);
-	tp_call_hyp((void*)hyp_stack_ptr, vector_ptr, pgd_ptr);
+	tp_call_hyp((void *)boot_pgd_ptr, (void*)pgd_ptr, (void*)hyp_stack_ptr, vector_ptr);
 }
 
 unsigned long get_hyp_vector(void)
@@ -128,13 +127,13 @@ static int init_hyp_mode(void)
 	/*
 	 * Map the Hyp-code called directly from the host
 	 */
-	err = create_hyp_mappings(__hyp_text_start, __hyp_text_end);
+	err = create_hyp_mappings(__hyp_text_start, __hyp_text_end, PAGE_HYP_EXEC);
 	if (err) {
 		tp_err("Cannot map world-switch code\n");
 		goto out_err;
 	}
 
-    err = create_hyp_mappings(__hyp_idmap_text_start,  __hyp_idmap_text_end);
+    err = create_hyp_mappings(__hyp_idmap_text_start,  __hyp_idmap_text_end, PAGE_HYP_EXEC);
     if (err) {
             tp_err("Cannot map world-switch code\n");
             return -1;
@@ -147,7 +146,7 @@ static int init_hyp_mode(void)
 //		goto out_err;
 //	}
 
-	err = create_hyp_mappings(__bss_start, __bss_stop);
+	err = create_hyp_mappings(__bss_start, __bss_stop, PAGE_HYP);
 	if (err) {
 		tp_err("Cannot map bss section\n");
 		goto out_err;
@@ -158,7 +157,7 @@ static int init_hyp_mode(void)
 	 */
 	for_each_possible_cpu(cpu) {
 		char *stack_page = (char *)per_cpu(tp_arm_hyp_stack_page, cpu);
-		err = create_hyp_mappings(stack_page, stack_page + PAGE_SIZE);
+		err = create_hyp_mappings(stack_page, stack_page + PAGE_SIZE, PAGE_HYP);
 		if (err) {
 			tp_err("Cannot map hyp stack\n");
 			goto out_err;
