@@ -49,10 +49,12 @@
 
 static DEFINE_PER_CPU(unsigned long, tp_arm_hyp_stack_page);
 
-static void __tp_cpu_init_hyp_mode(phys_addr_t pgd_ptr,
-			       unsigned long hyp_stack_ptr,
-			       unsigned long vector_ptr)
+static inline void __cpu_init_hyp_mode(phys_addr_t boot_pgd_ptr,
+                                       phys_addr_t pgd_ptr,
+                                       unsigned long hyp_stack_ptr,
+                                       unsigned long vector_ptr)
 {
+	tp_call_hyp(NULL, 0, boot_pgd_ptr);
 	tp_call_hyp((void*)hyp_stack_ptr, vector_ptr, pgd_ptr);
 }
 
@@ -65,6 +67,7 @@ unsigned long get_hyp_vector(void)
 static void cpu_init_hyp_mode(void)
 {
 	phys_addr_t pgd_ptr;
+	phys_addr_t boot_pgd_ptr;
 	unsigned long hyp_stack_ptr;
 	unsigned long stack_page;
 	unsigned long vector_ptr;
@@ -74,9 +77,10 @@ static void cpu_init_hyp_mode(void)
 
 	pgd_ptr = tp_mmu_get_httbr();
 	stack_page = __this_cpu_read(tp_arm_hyp_stack_page);
+	boot_pgd_ptr = tp_mmu_get_boot_httbr();
 	hyp_stack_ptr = stack_page + PAGE_SIZE;
 	vector_ptr = get_hyp_vector();
-	__tp_cpu_init_hyp_mode(pgd_ptr, hyp_stack_ptr, vector_ptr);
+	__cpu_init_hyp_mode(boot_pgd_ptr, pgd_ptr, hyp_stack_ptr, vector_ptr);
 	tp_run_vm(NULL);
 	return;
 }
