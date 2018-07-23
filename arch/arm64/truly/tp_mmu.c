@@ -150,7 +150,7 @@ void el2_mmu_fault_th(void)
 		panic("Faulted in an unknown area");
 
 	if (tv->far_el2)
-		map_user_space_data((void *)tv->far_el2, 8 , PAGE_HYP);
+		map_user_space_data((void *)tv->far_el2, 8 , PAGE_HYP_RW_EXEC);
 //
 // go back to the hyp to restore back to hyp mode
 //
