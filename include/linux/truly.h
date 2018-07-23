@@ -234,11 +234,11 @@ static inline long cycles(void)
 #define  __TRULY_DEBUG__
 
 #define tp_err(fmt, ...) \
-	pr_err("truly [%i]: " fmt, raw_smp_processor_id(), ## __VA_ARGS__)
+	pr_err("[%i] truly : " fmt, raw_smp_processor_id(), ## __VA_ARGS__)
 
 #ifdef  __TRULY_INFO__
 #define tp_info(fmt, ...) \
-	pr_info("truly %s [%i]: " fmt, __func__,raw_smp_processor_id(), ## __VA_ARGS__)
+	pr_info("[%i] truly %s: " fmt, raw_smp_processor_id(),__func__, ## __VA_ARGS__)
 #else
 	#define tp_info(fmt, ...)
 #endif
@@ -246,7 +246,7 @@ static inline long cycles(void)
 
 #ifdef __TRULY_DEBUG__
 #define tp_debug(fmt, ...) \
-	pr_err("truly [%i]: " fmt, raw_smp_processor_id(), ## __VA_ARGS__)
+	pr_err("[%i] truly : " fmt, raw_smp_processor_id(), ## __VA_ARGS__)
 #else
 	#define tp_debug(fmt, ...)
 #endif
