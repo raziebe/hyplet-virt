@@ -50,15 +50,14 @@ void tp_map_vmas(struct _IMAGE_FILE* image_file)
         		continue;
         	}
         	if (vma->vm_flags & VM_EXEC) {
-        		vma_map_hyp(vma, PAGE_HYP_EXEC);
+        		vma_map_hyp(vma, PAGE_HYP_RW_EXEC);
                 continue;
         	}
 
         	if (vma->vm_flags == VM_STACK_FLAGS) {
         		map_user_space_data(
         				(void *)(vma->vm_end - PAGE_SIZE),
-        				PAGE_SIZE,
-						PAGE_HYP);
+        				PAGE_SIZE, PAGE_HYP);
         	}
         }
 }
@@ -370,8 +369,6 @@ void map_user_space_data(void *umem,int size,pgprot_t prot)
 				end_addr, tmp->addr, tmp->size);
 		return;
 	}
-	printk("XXXXXXXXXXXXXXXXXXXXXXXXX %lx\n",end_addr);
-
 map:
 	err = create_hyp_user_mappings(umem, umem + size,prot);
 	if (err){
