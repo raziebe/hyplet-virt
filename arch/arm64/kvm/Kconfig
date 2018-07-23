@@ -53,11 +53,6 @@ config KVM_ARM_PMU
 	  Adds support for a virtual Performance Monitoring Unit (PMU) in
 	  virtual machines.
 
-config TRULY_PROTECT
-	bool
-	---help---
-	TrulyProtect TEE
-
 source drivers/vhost/Kconfig
 
 endif # VIRTUALIZATION
