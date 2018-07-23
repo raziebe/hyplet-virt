@@ -109,29 +109,51 @@ static inline bool kvm_page_empty(void *ptr)
 	return page_count(ptr_page) == 1;
 }
 
-#define tp_pte_table_empty(kvm, ptep) kvm_page_empty(ptep)
-#define tp_pmd_table_empty(kvm, pmdp) kvm_page_empty(pmdp)
-#define tp_pud_table_empty(pudp) false
+#define kvm_pte_table_empty(kvm, ptep) kvm_page_empty(ptep)
+#define kvm_pmd_table_empty(kvm, pmdp) kvm_page_empty(pmdp)
+#define kvm_pud_table_empty(kvm, pudp) false
 
-#define hyp_pte_table_empty(ptep) page_empty(ptep)
-#define hyp_pmd_table_empty(pmdp) page_empty(pmdp)
+#define hyp_pte_table_empty(ptep) kvm_page_empty(ptep)
+#define hyp_pmd_table_empty(pmdp) kvm_page_empty(pmdp)
 #define hyp_pud_table_empty(pudp) false
 
-#define tp_flush_dcache_to_poc(a,l)	__cpuc_flush_dcache_area((a), (l))
+struct kvm;
+
+#define kvm_flush_dcache_to_poc(a,l)	__cpuc_flush_dcache_area((a), (l))
 
 static inline bool vcpu_has_cache_enabled(struct kvm_vcpu *vcpu)
 {
 	return (vcpu_cp15(vcpu, c1_SCTLR) & 0b101) == 0b101;
 }
 
-static inline void __coherent_cache_guest_page(u64 pfn, unsigned long size)
+static inline void __coherent_cache_guest_page(struct kvm_vcpu *vcpu,
+					       kvm_pfn_t pfn,
+					       unsigned long size)
 {
+	/*
+	 * If we are going to insert an instruction page and the icache is
+	 * either VIPT or PIPT, there is a potential problem where the host
+	 * (or another VM) may have used the same page as this guest, and we
+	 * read incorrect data from the icache.  If we're using a PIPT cache,
+	 * we can invalidate just that page, but if we are using a VIPT cache
+	 * we need to invalidate the entire icache - damn shame - as written
+	 * in the ARM ARM (DDI 0406C.b - Page B3-1393).
+	 *
+	 * VIVT caches are tagged using both the ASID and the VMID and doesn't
+	 * need any kind of flushing (DDI 0406C.b - Page B3-1392).
+	 *
+	 * We need to do this through a kernel mapping (using the
+	 * user-space mapping has proved to be the wrong
+	 * solution). For that, we need to kmap one page at a time,
+	 * and iterate over the range.
+	 */
+
 	VM_BUG_ON(size & ~PAGE_MASK);
 
 	while (size) {
 		void *va = kmap_atomic_pfn(pfn);
 
-		tp_flush_dcache_to_poc(va, PAGE_SIZE);
+		kvm_flush_dcache_to_poc(va, PAGE_SIZE);
 
 		if (icache_is_pipt())
 			__cpuc_coherent_user_range((unsigned long)va,
