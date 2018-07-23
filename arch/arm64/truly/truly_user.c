@@ -34,6 +34,7 @@ void tp_reset_tvm(void)
 	for_each_possible_cpu(cpu) {
 			struct truly_vm *tv = get_tvm_per_cpu(cpu);
 			tv->protected_pgd = 0;
+			tv->tpidr_el0 = 0;
 			tv->tv_flags = 0;
 			tv->elr_el2  = 0;
 			tv->first_lr = 0;

@@ -164,6 +164,11 @@ NOT_FIRST:
 	blr x1
 	bl pad_invalidate
 
+// save the thread context for the case of an mmu abort
+	mrs x0, tpidr_el2
+	mrs x1, tpidr_el0
+	str x1, [x0,#TP_TPIDR_EL0]
+
 	restore_registers
 	pop	x2, x3
 	pop	x0, x1
@@ -175,7 +180,7 @@ NOT_FIRST:
 	and w1,w1,#0xFFFFFFFE
 	msr spsel,x1
 
-	mrs x30,elr_el2	   // go back to the next command after the faulted one
+	mrs x30, elr_el2	   // go back to the next command after the faulted one
 	mrs x1,cntvoff_el2 // <-- restore x1
 
 	msr cntvoff_el2,xzr
