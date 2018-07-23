@@ -20,7 +20,6 @@
 #include <linux/errno.h>
 #include <linux/err.h>
 #include <linux/kvm_host.h>
-
 #include <linux/list.h>
 #include <linux/module.h>
 #include <linux/vmalloc.h>
@@ -47,10 +46,6 @@
 #include <asm/kvm_coproc.h>
 #include <asm/kvm_psci.h>
 #include <asm/sections.h>
-
-#ifdef __TRULY__
-#include <linux/truly.h>
-#endif
 
 #ifdef REQUIRES_VIRT
 __asm__(".arch_extension	virt");
@@ -1142,16 +1137,6 @@ long kvm_arch_vm_ioctl(struct file *filp,
 	}
 }
 
-unsigned long get_hyp_vector(void)
-{
-#ifdef __TRULY__
-	tp_info("Assign Truly vector\n");
-	return (unsigned long)kvm_ksym_ref(__truly_vectors);
-#else
-	return (unsigned long)kvm_ksym_ref(__kvm_hyp_vector);
-#endif
-}
-
 static void cpu_init_hyp_mode(void *dummy)
 {
 	phys_addr_t pgd_ptr;
@@ -1165,13 +1150,11 @@ static void cpu_init_hyp_mode(void *dummy)
 	pgd_ptr = kvm_mmu_get_httbr();
 	stack_page = __this_cpu_read(kvm_arm_hyp_stack_page);
 	hyp_stack_ptr = stack_page + PAGE_SIZE;
-	vector_ptr = get_hyp_vector();
+	vector_ptr = (unsigned long)kvm_ksym_ref(__kvm_hyp_vector);
+
 	__cpu_init_hyp_mode(pgd_ptr, hyp_stack_ptr, vector_ptr);
-#ifdef __TRULY__
-	tp_run_vm(NULL);
-	return;
-#endif
 	__cpu_init_stage2();
+
 	kvm_arm_init_debug();
 }
 
@@ -1194,9 +1177,6 @@ static void cpu_hyp_reinit(void)
 		kvm_timer_init_vhe();
 	} else {
 		cpu_init_hyp_mode(NULL);
-#ifdef __TRULY__
-		return;
-#endif
 	}
 
 	if (vgic_present)
@@ -1311,11 +1291,8 @@ static int init_subsystems(void)
 	/*
 	 * Enable hardware so that subsystem initialisation can access EL2.
 	 */
-	truly_init();
-	_kvm_arch_hardware_enable(NULL);
-#ifdef __TRULY__
-	return err;
-#endif
+	on_each_cpu(_kvm_arch_hardware_enable, NULL, 1);
+
 	/*
 	 * Register CPU lower-power notifier
 	 */
@@ -1402,6 +1379,7 @@ static int init_hyp_mode(void)
 
 		per_cpu(kvm_arm_hyp_stack_page, cpu) = stack_page;
 	}
+
 	/*
 	 * Map the Hyp-code called directly from the host
 	 */
