@@ -80,7 +80,7 @@ void make_hstr_el2(struct truly_vm *tvm)
 
 void make_hcr_el2(struct truly_vm *tvm)
 {
-	tvm->hcr_el2 =   HCR_RW | HCR_VM ;// HCR_TRULY_FLAGS;
+	tvm->hcr_el2 =   HCR_RW ;//| HCR_VM ;// HCR_TRULY_FLAGS;
 }
 
 void make_mdcr_el2(struct truly_vm *tvm)
