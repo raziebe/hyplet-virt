@@ -88,6 +88,7 @@
 
 #define __int8  char
 typedef unsigned __int8 UCHAR;
+extern pgd_t *hyp_pgd;
 
 enum { ECB=0, CBC=1, CFB=2 };
 enum { DEFAULT_BLOCK_SIZE=16 };
@@ -224,15 +225,10 @@ unsigned long get_hyp_vector(void);
 long tp_call_hyp(void *hyper_func, ...);
 long truly_get_sp_el0(void);
 void unmap_hyp_range(pgd_t *pgdp, phys_addr_t start, u64 size);
+void el2_mmu_fault_th(void);
 
-//#define PAGE_HYP_USER	( PROT_DEFAULT  | PTE_ATTRINDX(0) ) // not shared,
-extern int __create_hyp_mappings(pgd_t *pgdp,
-				 unsigned long start, unsigned long end,
-				 unsigned long pfn, pgprot_t prot);
-extern pgd_t *hyp_pgd;
 
-static inline long cycles(void)
-{
+static inline long cycles(void){
         long cval;
         asm volatile ("mrs %0, cntvct_el0" : "=r" (cval));
         return cval;

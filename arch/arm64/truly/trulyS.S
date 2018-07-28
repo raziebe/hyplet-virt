@@ -131,7 +131,7 @@ BRK_EXCEPTION:
 
 	mrs	x0,tpidr_el2
 // save user space version of sp_el0
-	mrs	x1,sp_el0
+	mrs	x1, sp_el0
 	str x1,[x0, #TP_SP_EL0_USR]
 	ldr x3,[x0, #TP_PGD]
 	cmp x3, #0
@@ -465,8 +465,11 @@ EL2_sync:
 /*
  *	exit to EL1 to map fault the address in EL1 and EL2
 */
- //   First modify sp_el0 to reflect svc ( sp_el0 =
+// First , stash USR sp
 	mrs x0, tpidr_el2
+	mrs x1,sp_el0
+	str x1,[x0, #TP_SP_EL0_USR]
+ //   then modify sp_el0 to reflect kernel space sp_el0 (see get_current)
 	ldr x1,[x0, #TP_SP_EL0_KRN]
 	msr	sp_el0,x1
 
@@ -502,7 +505,7 @@ ENTRY(el2_mmu_fault_bh)
 	ldr x1,[x0, #TP_ELR_EL2]
 	msr elr_el2,x1
 
-// reflect sp_el0 to use space
+// reflect sp_el0 of user space
 	ldr x1,[x0, #TP_SP_EL0_USR]
 	msr	sp_el0,x1
 
