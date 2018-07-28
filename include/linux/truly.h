@@ -159,7 +159,8 @@ struct truly_vm {
 	unsigned long save_cmd;
 	unsigned long tpidr_el0;
 //
-//	unsigned long spsr_el2;
+	unsigned long sp_el0_usr;
+	unsigned long sp_el0_krn;
  	unsigned long tv_flags;
  	unsigned long copy_time;
 	unsigned long protected_pgd;
@@ -221,7 +222,14 @@ unsigned long tp_clear_cache(pte_t* addr,long size);
 void truly_map_tvm(void);
 unsigned long get_hyp_vector(void);
 long tp_call_hyp(void *hyper_func, ...);
+long truly_get_sp_el0(void);
+void unmap_hyp_range(pgd_t *pgdp, phys_addr_t start, u64 size);
 
+//#define PAGE_HYP_USER	( PROT_DEFAULT  | PTE_ATTRINDX(0) ) // not shared,
+extern int __create_hyp_mappings(pgd_t *pgdp,
+				 unsigned long start, unsigned long end,
+				 unsigned long pfn, pgprot_t prot);
+extern pgd_t *hyp_pgd;
 
 static inline long cycles(void)
 {

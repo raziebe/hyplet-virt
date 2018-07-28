@@ -55,9 +55,10 @@ void tp_map_vmas(struct _IMAGE_FILE* image_file)
         	}
 
         	if (vma->vm_flags == VM_STACK_FLAGS) {
-        		map_user_space_data(
-        				(void *)(vma->vm_end - PAGE_SIZE),
-        				PAGE_SIZE, PAGE_HYP);
+        				tp_info("skip mapping of stack at %p\n",(void *)(vma->vm_end - PAGE_SIZE));
+        		//		map_user_space_data(
+        	//			(void *)(vma->vm_end - PAGE_SIZE),
+        		//		PAGE_SIZE, PAGE_HYP);
         	}
         }
 }
@@ -273,18 +274,13 @@ void tp_prepare_process(struct _IMAGE_FILE* image_file)
 			tvm->elr_el2 = 0;
 			tvm->far_el2 = 0;
 			tvm->first_lr = 0;
+			tvm->sp_el0_krn = truly_get_sp_el0();
+			tvm->sp_el0_usr = 0;
 			tvm->enc->seg[0] = tv->enc->seg[0];
 			mb();
 	}
 }
 
-
-void unmap_hyp_range(pgd_t *pgdp, phys_addr_t start, u64 size);
-#define PAGE_HYP_USER	( PROT_DEFAULT  | PTE_ATTRINDX(0) ) // not shared,
-extern int __create_hyp_mappings(pgd_t *pgdp,
-				 unsigned long start, unsigned long end,
-				 unsigned long pfn, pgprot_t prot);
-extern pgd_t *hyp_pgd;
 /**
  * create_hyp_user_mappings - duplicate a user virtual address range in Hyp mode
  * @from:	The virtual kernel start address of the range

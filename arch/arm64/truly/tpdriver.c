@@ -245,18 +245,21 @@ clean_2:
 
 int el2_do_page_fault(unsigned long addr)
 {
-	char buf[10];
-
-	if ( !copy_from_user(buf, (void *)addr,sizeof(buf)) ){
-		void el2_mmu_fault_th(void);
-		printk("Truly: faulted user address %lx\n",addr);
-		el2_mmu_fault_th();
-	}else{
+	void el2_mmu_fault_th(void);
+	char buf;
+	char *__addr = (char *)addr;
+//	if ( !copy_from_user(buf, (void *)addr,sizeof(buf)) ){
+	buf = __addr[0];
+	printk("Truly: faulted user address %lx\n",addr);
+	el2_mmu_fault_th();
+/*
+ * 	}else{
 		struct truly_vm *tvm = get_tvm();
 		printk("Truly: Failed to fault"
 				" user address %lx elr_el2=%lx\n",
 				addr ,tvm->elr_el2 );
 	}
+	*/
 	return 0;
 }
 

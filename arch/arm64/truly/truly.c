@@ -60,6 +60,13 @@ long truly_get_mfr(void)
 	return e;
 }
 
+long truly_get_sp_el0(void)
+{
+	long e = 0;
+    asm("mrs %0,sp_el0\n":"=r"(e));
+	return e;
+}
+
 /*
  * the page us using attr_ind 4
  */

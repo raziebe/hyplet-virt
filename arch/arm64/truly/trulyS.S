@@ -130,6 +130,9 @@ el1_trap:
 BRK_EXCEPTION:
 
 	mrs	x0,tpidr_el2
+// save user space version of sp_el0
+	mrs	x1,sp_el0
+	str x1,[x0, #TP_SP_EL0_USR]
 	ldr x3,[x0, #TP_PGD]
 	cmp x3, #0
 	b.ne SAVE_LR
@@ -462,6 +465,11 @@ EL2_sync:
 /*
  *	exit to EL1 to map fault the address in EL1 and EL2
 */
+ //   First modify sp_el0 to reflect svc ( sp_el0 =
+	mrs x0, tpidr_el2
+	ldr x1,[x0, #TP_SP_EL0_KRN]
+	msr	sp_el0,x1
+
 	ldr x0,=el2_do_page_fault
 	msr elr_el2,x0
 
@@ -472,6 +480,7 @@ EL2_sync:
 	msr spsr_el2,x1
 	// prepare argument
 	mrs  x0, far_el2
+
 	eret
 3:
 	ldr x1, =truly_pad
@@ -493,8 +502,9 @@ ENTRY(el2_mmu_fault_bh)
 	ldr x1,[x0, #TP_ELR_EL2]
 	msr elr_el2,x1
 
-//	ldr x1,[x0, #TP_SPSR_EL2]
-//	msr spsr_el2,x1
+// reflect sp_el0 to use space
+	ldr x1,[x0, #TP_SP_EL0_USR]
+	msr	sp_el0,x1
 
 	bl pad_invalidate
 
