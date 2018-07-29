@@ -346,10 +346,7 @@ map:
 	addr->addr = (unsigned long)umem & PAGE_MASK;
 	addr->size = PAGE_ALIGN((unsigned long)umem + size) - addr->addr;
 
-//	mutex_lock(&tv->sync);
 	list_add(&addr->lst, &tv->hyp_addr_lst);
-//	mutex_unlock(&tv->sync);
-
 	tp_info("pid %d user mapped real (%p size=%d) in [%lx,%lx] size=%d\n",
 			current->pid,umem ,size, addr->addr, addr->addr + addr->size ,addr->size );
 
