@@ -219,7 +219,7 @@ void truly_set_trap(void);
 unsigned long  truly_get_exception_level(void);
 int is_addr_mapped(long addr,struct truly_vm *tv);
 unsigned long read_sctlr_el2(void);
-unsigned long tp_clear_cache(pte_t* addr,long size);
+unsigned long tp_clear_cache(pte_t pte,long size);
 void truly_map_tvm(void);
 unsigned long get_hyp_vector(void);
 long tp_call_hyp(void *hyper_func, ...);

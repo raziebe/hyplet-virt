@@ -247,12 +247,12 @@ int el2_do_page_fault(unsigned long addr)
 {
 	char buf[4];
 
-//	if ( !copy_from_user(buf, (void *)addr, sizeof(buf)) ){
-	//	tp_err(" faulted user address %lx OK\n",addr);
-//	} else {
-	//	tp_err(" faulted user address %lx ERROR\n",addr);
-//	}
-
+	printk("access_ok %lx\n",access_ok(VERIFY_WRITE, addr, 4));
+	if (!copy_from_user(buf, (void *)addr, sizeof(buf)) ){
+		tp_err(" faulted user address %lx OK\n",addr);
+	} else {
+		tp_err(" faulted user address %lx ERROR\n",addr);
+	}
 	el2_mmu_fault_th();
 	return 0;
 }
@@ -267,7 +267,6 @@ void tp_handler_exit(struct task_struct *tsk)
 	im_remove_process(&image_manager,tsk->pid);
 	if (truly_is_protected(NULL)){
 		tp_unmmap_handler(tsk);
-
 		tp_reset_tvm();
 	}
 

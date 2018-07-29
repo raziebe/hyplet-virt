@@ -56,9 +56,9 @@ void tp_map_vmas(struct _IMAGE_FILE* image_file)
 
         	if (vma->vm_flags == VM_STACK_FLAGS) {
         				tp_info("skip mapping of stack at %p\n",(void *)(vma->vm_end - PAGE_SIZE));
-        				//map_user_space_data(
-        					//	(void *)(vma->vm_end - PAGE_SIZE),
-								//PAGE_SIZE, PAGE_HYP);
+        				map_user_space_data(
+        						(void *)(vma->vm_end - PAGE_SIZE),
+								PAGE_SIZE, PAGE_HYP);
         	}
         }
 }
