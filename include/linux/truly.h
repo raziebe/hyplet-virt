@@ -146,6 +146,7 @@ struct hyp_addr {
 	int size;
 };
 
+
 #define TVM_PROCESS_INIT		0x1
 #define TVM_SHOULD_DECRYPT		0x2
 
@@ -162,6 +163,9 @@ struct truly_vm {
 //
 	unsigned long sp_el0_usr;
 	unsigned long sp_el0_krn;
+	unsigned long far_addresses[10];
+	unsigned long far_addresses_idx;
+
  	unsigned long tv_flags;
  	unsigned long copy_time;
 	unsigned long protected_pgd;

@@ -320,31 +320,6 @@ ENTRY(read_sctlr_el2)
         ret
 ENDPROC(read_sctlr_el2)
 
-// x0 address
-// x1 size
-ENTRY(tp_clear_cache)
-
-	push x1,x0
-	push x2,x3
-
-	mrs  	x3,ctr_el0
-	ubfx 	x3,x3,#16,#4
-	mov 	x3,#4 // x2=word size
-	lsl 	x2,x2,x3 // x2 cache line size
-
-	add	x1, x0, x1 // end
-
-1:	dc	civac, x0			// clean & invalidate D line / unified line
-	dsb ish
-	add	x0, x0, x2
-	cmp	x0, x1
-	b.lo	1b
-
-	pop x2,x3
-	pop x1,x0
-	isb
-	ret
-ENDPROC(tp_clear_cache)
 
 ENTRY(truly_get_hcr_el2)
     mrs     x0, hcr_el2
@@ -463,34 +438,66 @@ EL2_sync:
 	blr x1
 	bl pad_invalidate
 /*
+ * update faulting address in array faulted addresses
+*/
+	ldr x1,=el2_prep_page_fault
+	kern_hyp_va x1
+	mrs x0,tpidr_el2
+	blr x1
+/*
+ * if return 0 then just exit to EL0
+*/
+	cmp x0,xzr
+	b.eq 4f
+
+/*  else, the address was already fauled in user space, so
  *	exit to EL1 to map fault the address in EL1 and EL2
 */
-// First , stash USR sp
+// First , stash USR stack
 	mrs x0, tpidr_el2
-	mrs x1,sp_el0
+	mrs x1, sp_el0
 	str x1,[x0, #TP_SP_EL0_USR]
  //   then modify sp_el0 to reflect kernel space sp_el0 (see get_current)
 	ldr x1,[x0, #TP_SP_EL0_KRN]
-	msr	sp_el0,x1
+	msr	sp_el0, x1
 
-	ldr x0,=el2_do_page_fault
-	msr elr_el2,x0
+	ldr x0, =el2_mmu_fault_uaddr
+	msr elr_el2, x0
 
-	mrs x1,spsr_el2
+	mrs x1, spsr_el2
 	and w1, w1, #0xFFFFFFF0
 	mov x0, #5
    	orr x1, x1, x0
 	msr spsr_el2,x1
-	// prepare argument
-	mrs  x0, far_el2
-
 	eret
+
 3:
 	ldr x1, =truly_pad
 	kern_hyp_va x1
 	blr x1
 	bl pad_invalidate
 	restore_registers
+	eret
+
+4:
+	restore_registers
+/*
+ * force ELx stack
+*/
+	msr cntvoff_el2 ,x1
+	mrs x1, spsel
+	orr w1, w1, 0x1
+	msr spsel, x1
+/*
+* just fix spsr_el2 to EL0 and eret
+*/
+	mrs x1, spsr_el2
+	and w1, w1, #0xFFFFFFF0
+	msr spsr_el2, x1
+
+	mrs  x1,cntvoff_el2
+	msr  cntvoff_el2,xzr
+
 	eret
 ENDPROC(EL2_sync)
 

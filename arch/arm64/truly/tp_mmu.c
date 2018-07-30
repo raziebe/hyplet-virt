@@ -33,10 +33,11 @@ void tp_map_vmas(struct _IMAGE_FILE* image_file)
         	}
 
         	if (vma->vm_flags == VM_STACK_FLAGS) {
-        				tp_info("skip mapping of stack at %p\n",(void *)(vma->vm_end - PAGE_SIZE));
-        				map_user_space_data(
-        						(void *)(vma->vm_end - PAGE_SIZE),
-								PAGE_SIZE, PAGE_HYP);
+        				tp_info("skip mapping of stack at %p\n",
+        							(void *)(vma->vm_end - PAGE_SIZE));
+        				//map_user_space_data(
+        				//		(void *)(vma->vm_end - PAGE_SIZE),
+						//		PAGE_SIZE, PAGE_HYP);
         	}
         }
 }
@@ -84,29 +85,42 @@ int mmu_map_page(unsigned long addr, struct truly_vm *tv)
     map_user_space_data( (void *)addr, PAGE_SIZE, PAGE_HYP);
     return 0;
 }
-/*
- *  handle EL2 mmu fault from EL1.
- *
- *  We map the address and them move back to EL2
- *  to complete the run
- */
-void el2_mmu_fault_th(void)
+
+
+void el2_mmu_fault_uaddr(void)
 {
-	struct truly_vm *tv;
-	unsigned long flags;
+	struct truly_vm *tvm;
+	int i = 0;
 
-	local_irq_save(flags);
-	tv = get_tvm();
-	if (tv->far_el2 == 0 && tv->elr_el2 == 0)
-		panic("Faulted in an unknown area");
-
-	if (tv->far_el2)
-		map_user_space_data((void *)tv->far_el2, 8 , PAGE_HYP_RW_EXEC);
-//
-// go back to the hyp to restore back to hyp mode
-//
-	local_irq_restore(flags);
+	tvm = get_tvm();
+	for (; i < tvm->far_addresses_idx; i++) {
+		map_user_space_data((void *)tvm->far_addresses[i] , PAGE_SIZE , PAGE_HYP_RW_EXEC);
+		tvm->far_addresses[i] = 0;
+	}
+	tvm->far_addresses_idx = 0;
 	tp_call_hyp(el2_mmu_fault_bh);
+}
+
+/*
+ * if this is the first time we access this page
+ * then we do not fault in kernel mode, but in user
+ * space. so we merely mark the address as to-be-mapped
+ * 0 - first time access.
+ * 1 - second time access. call el2_mmu_fault_vaddr
+ */
+int __hyp_text el2_prep_page_fault(struct truly_vm *tvm)
+{
+       int i = 0;
+       unsigned long addr = tvm->far_el2 & PAGE_MASK;
+
+       for (; i < tvm->far_addresses_idx; i++) {
+               if (addr == tvm->far_addresses[i]) {
+                       return 1; // already faulted , fault in el2 as well.
+               }
+       }
+       tvm->far_addresses[tvm->far_addresses_idx] = tvm->far_el2 & PAGE_MASK;
+       tvm->far_addresses_idx++;
+       return 0;
 }
 
 struct hyp_addr* tp_get_addr_segment(long addr,struct truly_vm *tv)
@@ -221,6 +235,7 @@ void tp_prepare_process(struct _IMAGE_FILE* image_file)
 			tvm->decrypt_time = 0;
 			tvm->elr_el2 = 0;
 			tvm->far_el2 = 0;
+			tvm->far_addresses_idx = 0;
 			tvm->first_lr = 0;
 			tvm->sp_el0_krn = truly_get_sp_el0();
 			tvm->sp_el0_usr = 0;
