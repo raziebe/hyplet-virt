@@ -58,39 +58,6 @@ static phys_addr_t hyp_idmap_vector;
 
 #define tp_pud_addr_end(addr, end)     pud_addr_end(addr, end)
 
-/*
-static void tp_flush_dcache_pte(pte_t pte)
-{
-	void *va = kmap_atomic(pte_page(pte));
-
-	tp_flush_dcache_to_poc(va, PAGE_SIZE);
-
-	kunmap_atomic(va);
-}
-
-static inline void __tp_flush_dcache_pmd(pmd_t pmd)
-{
-	unsigned long size = PMD_SIZE;
-	unsigned long pfn = pmd_pfn(pmd);
-
-	while (size) {
-		void *va = kmap_atomic_pfn(pfn);
-
-		tp_flush_dcache_to_poc(va, PAGE_SIZE);
-
-		pfn++;
-		size -= PAGE_SIZE;
-
-		kunmap_atomic(va);
-	}
-}
-
-static void tp_flush_dcache_pmd(pmd_t pmd)
-{
-	__tp_flush_dcache_pmd(pmd);
-}
-*/
-
 static void clear_pgd_entry(pgd_t *pgd, phys_addr_t addr)
 {
 	pud_t *pud_table __maybe_unused = pud_offset(pgd, 0);
@@ -117,26 +84,7 @@ static void clear_pmd_entry(pmd_t *pmd, phys_addr_t addr)
 	put_page(virt_to_page(pmd));
 }
 
-/*
- * Unmapping vs dcache management:
- *
- * If a guest maps certain memory pages as uncached, all writes will
- * bypass the data cache and go directly to RAM.  However, the CPUs
- * can still speculate reads (not writes) and fill cache lines with
- * data.
- *
- * Those cache lines will be *clean* cache lines though, so a
- * clean+invalidate operation is equivalent to an invalidate
- * operation, because no cache lines are marked dirty.
- *
- * Those clean cache lines could be filled prior to an uncached write
- * by the guest, and the cache coherent IO subsystem would therefore
- * end up writing old data to disk.
- *
- * This is why right after unmapping a page/section and invalidating
- * the corresponding TLBs, we call kvm_flush_dcache_p*() to make sure
- * the IO subsystem will never hit in the cache.
- */
+
 static void unmap_ptes(pmd_t *pmd,
 		       phys_addr_t addr, phys_addr_t end)
 {
