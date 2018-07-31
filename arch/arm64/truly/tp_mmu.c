@@ -31,7 +31,7 @@ void tp_map_vmas(struct _IMAGE_FILE* image_file)
         		vma_map_hyp(vma, PAGE_HYP_RW_EXEC);
                 continue;
         	}
-
+/*
         	if (vma->vm_flags == VM_STACK_FLAGS) {
         				tp_info("skip mapping of stack at %p\n",
         							(void *)(vma->vm_end - PAGE_SIZE));
@@ -39,6 +39,7 @@ void tp_map_vmas(struct _IMAGE_FILE* image_file)
         				//		(void *)(vma->vm_end - PAGE_SIZE),
 						//		PAGE_SIZE, PAGE_HYP);
         	}
+*/
         }
 }
 
@@ -67,25 +68,11 @@ void vma_map_hyp(struct vm_area_struct* vma,pgprot_t prot)
 
 void unmap_user_space_data(unsigned long umem,int size)
 {
+	tp_clear_icache(umem, size);
+	//tp_flush_tlb(old_pte);
 	hyp_user_unmap(umem,  size, 1);
 	tp_debug("pid %d unmapped %lx \n", current->pid, umem);
 }
-
-int mmu_map_page(unsigned long addr, struct truly_vm *tv)
-{
-    struct vm_area_struct* vma;
-
-    vma = current->mm->mmap;
-
-    if (is_addr_mapped(addr,tv)){
-    	tp_debug("%s %lx already mapped\n",__func__,addr);
-    	return 0;
-    }
-   // __do_page_fault
-    map_user_space_data( (void *)addr, PAGE_SIZE, PAGE_HYP);
-    return 0;
-}
-
 
 void el2_mmu_fault_uaddr(void)
 {
