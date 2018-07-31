@@ -190,7 +190,7 @@ struct truly_vm {
 } __attribute__ ((aligned (8)));
 
 extern char __truly_vectors[];
-int truly_init(void);
+int  truly_init(void);
 void truly_clone_vm(void *);
 void truly_smp_run_hyp(void);
 void truly_clone_vm(void *d);
@@ -229,7 +229,6 @@ unsigned long get_hyp_vector(void);
 long tp_call_hyp(void *hyper_func, ...);
 long truly_get_sp_el0(void);
 void unmap_hyp_range(pgd_t *pgdp, phys_addr_t start, u64 size);
-void el2_mmu_fault_th(void);
 
 
 static inline long cycles(void){
