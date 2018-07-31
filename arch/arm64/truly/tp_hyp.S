@@ -195,32 +195,17 @@ NOT_FIRST:
 	// Return from the decrypted routine and then return to the
 	// reconstruced x30 as elr_el2
 
-	// first pad back the code
-	save_registers
-	mrs	x0,tpidr_el2
-	mov x1,#0x0
-	str x1,[x0, #TP_SAVE_CMD]
-	ldr x1,=truly_pad
-	kern_hyp_va x1
-	blr x1
-	bl pad_invalidate
-
-	restore_registers
-	//
-	push x0, x1
-	mrs	x0,tpidr_el2
-	// reconstrcted caller
-	ldr x30,[x0, #TP_FIRST_LR]
-	msr  elr_el2,x30 // we eret, so we must fix the pc in EL0
-	str xzr,[x0, #TP_FIRST_LR]
-
-	pop x0,x1
-
+	/*
+	*	force stack back to elX as we cannot use the program's stack.
+	*/
 	msr cntvoff_el2 ,x1   //<-- save x1
-	//	force stack back to elX
 	mrs x1, spsel
 	orr w1,w1,#0x1
 	msr spsel,x1
+
+/*
+ * force eret to EL0
+*/
 
 	mrs  x1,spsr_el2
 	and w1,w1,#0xFFFFFFF0
@@ -229,7 +214,23 @@ NOT_FIRST:
 	mrs x1,cntvoff_el2 // <-- restore x1
 	msr cntvoff_el2,xzr
 
-	isb
+	// pad the code
+	save_registers
+	mrs	x0,tpidr_el2
+	str xzr,[x0, #TP_SAVE_CMD]
+	ldr x1,=truly_pad
+	kern_hyp_va x1
+	blr x1
+	bl pad_invalidate
+
+	mrs	x0,tpidr_el2
+	// reconstrcted caller
+	ldr x30,[x0, #TP_FIRST_LR]
+	msr  elr_el2,x30 // we eret, so we must fix the pc in EL0
+	str xzr,[x0, #TP_FIRST_LR]
+
+	restore_registers
+
 	eret
 ENDPROC(el1_trap)
 
@@ -544,7 +545,31 @@ ENTRY(tp_call_hyp)
         ret
 ENDPROC(tp_call_hyp)
 
+// x0 - vaddr
+// x1 - size
+ENTRY(tp_clear_icache)
 
+        push x1,x0
+        push x2,x3
+
+        mrs     x3,ctr_el0
+        ubfx    x3,x3,#16,#4
+        mov     x3,#4 // x2=word size
+        lsl     x2,x2,x3 // x2 cache line size
+
+        add     x1, x0, x1 // end
+
+1:      ic      ivau, x0   // clean & invalidate I line / unified line
+        dsb 	ish
+        add     x0, x0, x2
+        cmp     x0, x1
+        b.lo    1b
+
+        pop x2,x3
+        pop x1,x0
+        isb
+        ret
+ENDPROC(tp_clear_icache)
 
 // http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/CHDEEDDC.html
 .align 11
