@@ -16,33 +16,10 @@
  * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <linux/delay.h>
 #include <linux/init.h>
-#include <linux/io.h>
 #include <linux/kernel.h>
-#include <linux/of_address.h>
-#include <linux/of_irq.h>
-#include <linux/errno.h>
-
-#include <linux/arm-cci.h>
-
-#include <linux/errno.h>
-#include <linux/err.h>
 #include <linux/list.h>
 #include <linux/module.h>
-#include <linux/vmalloc.h>
-#include <linux/fs.h>
-
-#include <linux/sched.h>
-#include <linux/uaccess.h>
-#include <asm/ptrace.h>
-#include <asm/mman.h>
-#include <asm/tlbflush.h>
-#include <asm/cacheflush.h>
-#include <asm/virt.h>
-#include <asm/sections.h>
-
-
 #include <linux/truly.h>
 #include "hyp_mmu.h"
 
