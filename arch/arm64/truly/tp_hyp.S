@@ -268,7 +268,7 @@ __truly_panic:
 	mrs	x3, esr_el2
 	mrs	x4, far_el2
 	mrs	x5, hpfar_el2
-	mrs	x7, tpidr_el2
+	mov	x7, sp
 
 	mov	lr, #(PSR_F_BIT | PSR_I_BIT | PSR_A_BIT | PSR_D_BIT |\
 		      PSR_MODE_EL1h)
@@ -283,7 +283,7 @@ __truly_panic:
 ENDPROC(__truly_panic)
 __hyp_panic_str:
 	.ascii	"Truly panic:\nCode:%08x elr_el2:%016x ESR_EL2:%08x\nFAR_EL2:%016x" \
-	" HPFAR:%016x ENTRY:%p\nTrulyCxt:%p\n\0"
+	" HPFAR:%016x ENTRY:%p\nSP:%p\n\0"
 
 ENTRY(truly_get_tcr_el1)
        mrs     x0, tcr_el1
@@ -558,7 +558,7 @@ ENDPROC(tp_call_hyp)
 // x0 - va to flush
 ENTRY(tp_flush_tlb)
 	tlbi vae2, x0
-	dsb
+	dsb sy
 	ret
 ENDPROC(tp_flush_tlb)
 

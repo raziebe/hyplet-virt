@@ -1,8 +1,7 @@
 #
-#  Truly Protect 
+# Hyplet Protect 
 #
-
-config TRULY_PROTECT
-	bool "TrulyProtect"
+config HYPLET
+	bool "hyplet"
 	---help---
 	todo

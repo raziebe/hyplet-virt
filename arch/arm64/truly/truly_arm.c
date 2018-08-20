@@ -17,9 +17,24 @@
  */
 
 #include <linux/init.h>
+#include <linux/io.h>
 #include <linux/kernel.h>
+#include <linux/errno.h>
+#include <linux/arm-cci.h>
+#include <linux/errno.h>
+#include <linux/err.h>
 #include <linux/list.h>
 #include <linux/module.h>
+#include <linux/vmalloc.h>
+#include <linux/fs.h>
+
+#include <linux/sched.h>
+#include <asm/tlbflush.h>
+
+#include <asm/virt.h>
+#include <asm/sections.h>
+
+#include <linux/hyplet.h>
 #include <linux/truly.h>
 #include "hyp_mmu.h"
 
@@ -31,12 +46,12 @@ static inline void __cpu_init_hyp_mode(phys_addr_t boot_pgd_ptr,
                                        unsigned long hyp_stack_ptr,
                                        unsigned long vector_ptr)
 {
-	tp_call_hyp((void *)boot_pgd_ptr, (void*)pgd_ptr, (void*)hyp_stack_ptr, vector_ptr);
+	hyplet_call_hyp((void *)boot_pgd_ptr, (void*)pgd_ptr, (void*)hyp_stack_ptr, vector_ptr);
 }
 
 unsigned long get_hyp_vector(void)
 {
-	return (unsigned long)__truly_vectors;
+	return (unsigned long)__hyplet_vectors;
 }
 
 static void cpu_init_hyp_mode(void *discard)
@@ -55,10 +70,9 @@ static void cpu_init_hyp_mode(void *discard)
 	boot_pgd_ptr = tp_mmu_get_boot_httbr();
 	hyp_stack_ptr = stack_page + PAGE_SIZE;
 	vector_ptr = get_hyp_vector();
-	tp_info("Assign Truly vector\n");
+	printk("assign truly vector %lx\n",hyp_stack_ptr);
 	__cpu_init_hyp_mode(boot_pgd_ptr, pgd_ptr, hyp_stack_ptr, vector_ptr);
-	tp_run_vm(NULL);
-	return;
+	hyplet_setup();
 }
 
 static int init_subsystems(void)
@@ -100,19 +114,20 @@ static int init_hyp_mode(void)
 	 */
 	err = create_hyp_mappings(__hyp_text_start, __hyp_text_end, PAGE_HYP_EXEC);
 	if (err) {
-		tp_err("Cannot map world-switch code\n");
+		printk("Cannot map world-switch code\n");
 		goto out_err;
 	}
 
-    err = create_hyp_mappings(__hyp_idmap_text_start,  __hyp_idmap_text_end, PAGE_HYP_EXEC);
-    if (err) {
-            tp_err("Cannot map world-switch code\n");
+	err = create_hyp_mappings(__hyp_idmap_text_start, 
+			 __hyp_idmap_text_end, PAGE_HYP_EXEC);
+	if (err) {
+            printk("Cannot map world-switch code\n");
             return -1;
-    }
+	}
 
 	err = create_hyp_mappings(__bss_start, __bss_stop, PAGE_HYP);
 	if (err) {
-		tp_err("Cannot map bss section\n");
+		printk("Cannot map bss section\n");
 		goto out_err;
 	}
 
@@ -123,18 +138,19 @@ static int init_hyp_mode(void)
 		char *stack_page = (char *)per_cpu(tp_arm_hyp_stack_page, cpu);
 		err = create_hyp_mappings(stack_page, stack_page + PAGE_SIZE, PAGE_HYP);
 		if (err) {
-			tp_err("Cannot map hyp stack\n");
+			printk("Cannot map hyp stack\n");
 			goto out_err;
 		}
 	}
-	tp_info("Hyp mode initialized successfully\n");
 
+	printk("Hyp mode initialized successfully\n");
 	return 0;
 
 out_err:
-	tp_err("error initializing Hyp mode: %d\n", err);
+	printk("error initializing Hyp mode: %d\n", err);
 	return err;
 }
+
 #if 0 // older kernels
 int __attribute_const__ tp_target_cpu(void)
 {
@@ -197,27 +213,26 @@ static int tp_arch_init(void)
 	int ret, cpu;
 
 	if (!is_hyp_mode_available()) {
-		tp_err("HYP mode not available\n");
+		printk("HYP mode not available\n");
 		return -ENODEV;
 	}
 
 	for_each_online_cpu(cpu) {
 		smp_call_function_single(cpu, check_tp_target_cpu, &ret, 1);
 		if (ret < 0) {
-			tp_err("Error, CPU %d not supported!\n", cpu);
+			printk("Error, CPU %d not supported!\n", cpu);
 			return -ENODEV;
 		}
 	}
 
-	tp_info("HYP mode is available\n");
+	printk("HYP mode is available\n");
 	err = init_hyp_mode();
 	if (err)
 		return -1;
 
-	err = truly_init();
+	err = hyplet_init();
 	if (err)
 		return err;
-
 
 	err = init_subsystems();
 	if (err)
