@@ -63,6 +63,7 @@
 #include <linux/kmsg_dump.h>
 /* Move somewhere else to avoid recompiling? */
 #include <generated/utsrelease.h>
+#include <linux/hyplet.h>
 
 #include <linux/uaccess.h>
 #include <asm/io.h>
@@ -2482,6 +2483,12 @@ SYSCALL_DEFINE1(sysinfo, struct sysinfo __user *, info)
 
 	return 0;
 }
+
+SYSCALL_DEFINE1(hyplet, unsigned long, ctl)
+{
+       return hyplet_ctl (ctl);
+}
+
 
 #ifdef CONFIG_COMPAT
 struct compat_sysinfo {

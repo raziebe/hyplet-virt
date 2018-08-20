@@ -9,30 +9,6 @@
 #include <linux/proc_fs.h>
 #include <linux/delay.h>
 
-#include <linux/export.h>
-#include <linux/kernel.h>
-#include <linux/sched.h>
-#include <linux/init.h>
-#include <linux/signal.h>
-#include <linux/completion.h>
-#include <linux/workqueue.h>
-#include <linux/slab.h>
-#include <linux/cpu.h>
-#include <linux/notifier.h>
-#include <linux/kthread.h>
-#include <linux/hardirq.h>
-#include <linux/mempolicy.h>
-#include <linux/freezer.h>
-#include <linux/kallsyms.h>
-#include <linux/debug_locks.h>
-#include <linux/lockdep.h>
-#include <linux/idr.h>
-#include <linux/jhash.h>
-#include <linux/hashtable.h>
-#include <linux/rculist.h>
-#include <linux/nodemask.h>
-#include <linux/moduleparam.h>
-#include <linux/uaccess.h>
 #include <linux/hyplet.h>
 #include <linux/hyplet_user.h>
 #include <linux/tp_mmu.h>
@@ -105,7 +81,6 @@ void hyplet_setup(void)
 		hyplet_info("vbar_el2 should restore\n");
 		hyplet_set_vectors(vbar_el2);
 	}
-	hyplet_call_hyp(hyplet_on, tv, NULL);
 }
 
 int is_hyplet_on(void)
