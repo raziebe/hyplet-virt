@@ -54,7 +54,7 @@ int create_hyp_user_mappings(void *from, void *to,pgprot_t prot)
 	unsigned long fr = (unsigned long)from;
 	unsigned long start = USER_TO_HYP((unsigned long)from);
 	unsigned long end = USER_TO_HYP((unsigned long)to);
-
+	int mapped = 0;
 
 	start = start & PAGE_MASK;
 	end = PAGE_ALIGN(end);
@@ -73,11 +73,12 @@ int create_hyp_user_mappings(void *from, void *to,pgprot_t prot)
 						prot);
 		if (err) {
 			printk("TP: Failed to map %p\n",(void *)virt_addr);
-			return err;
+			return mapped;
 		}
+		mapped++;
 	}
 
-	return 0;
+	return mapped;
 }
 
 struct hyp_addr* hyplet_get_addr_segment(long addr,struct hyplet_vm *tv)
@@ -116,13 +117,13 @@ int __hyplet_map_user_data(long umem,int size,int flags)
 
 	addr = kmalloc(sizeof(struct hyp_addr ), GFP_USER);
 	addr->addr = (unsigned long)umem;
-	addr->size = size;
+	addr->size = pages * PAGE_SIZE;
 	addr->flags = flags;
 	addr->nr_pages = pages;
 	list_add(&addr->lst, &hyp->hyp_addr_lst);
 
-//	hyplet_info("pid %d user mapped %lx size=%d pages=%d\n",
-//			current->pid,umem ,size, addr->nr_pages );
+	hyplet_info("pid %d user mapped %lx size=%d pages=%d\n",
+			current->pid,umem ,size, addr->nr_pages );
 
 
 	if (flags & VM_EXEC)
