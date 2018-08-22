@@ -24,8 +24,6 @@ struct hyplet_vm* hyplet_get_vm(void)
 {
 	return this_cpu_ptr(&HYPLETS);
 }
-
-
 /*
  * construct page table
 */
@@ -59,6 +57,7 @@ void hyplet_map_tvm(void)
 	} else {
 		hyplet_info("Mapped hyplet state");
 	}
+
 }
 
 int __hyp_text is_hyp(void)
@@ -70,7 +69,7 @@ int __hyp_text is_hyp(void)
 
 void hyplet_setup(void)
 {
-	struct hyplet_vm *tv = hyplet_get_vm();
+	struct hyplet_vm *hyp = hyplet_get_vm();
 	unsigned long vbar_el2 = (unsigned long)KERN_TO_HYP(__hyplet_vectors);
 	unsigned long vbar_el2_current;
 
@@ -81,6 +80,7 @@ void hyplet_setup(void)
 		hyplet_info("vbar_el2 should restore\n");
 		hyplet_set_vectors(vbar_el2);
 	}
+	hyplet_call_hyp(hyplet_on, hyp);
 }
 
 int is_hyplet_on(void)

@@ -109,7 +109,7 @@ int __hyplet_map_user_data(long umem,int size,int flags)
 
 	hyp = hyplet_get_vm();
 
-	pages = create_hyp_user_mappings((void *)umem, (void *)(umem + size), PAGE_HYP);
+	pages = create_hyp_user_mappings((void *)umem, (void *)(umem + size), PAGE_HYP_RW_EXEC);
 	if (pages <= 0){
 			hyplet_err(" failed to map to ttbr0_el2\n");
 			return -1;
@@ -175,9 +175,9 @@ void hyplet_free_mem(struct hyplet_vm *tv)
 
         list_for_each_entry_safe(tmp, tmp2, &tv->hyp_addr_lst, lst) {
 
-        //	hyplet_info("unmap %lx, %lx size=%d pages=%d\n",
-        //			tmp->addr, tmp->addr & PAGE_MASK,
-	//			tmp->size,  tmp->nr_pages);
+        	hyplet_info("unmap %lx, %lx size=%d pages=%d\n",
+        			tmp->addr, tmp->addr & PAGE_MASK,
+				tmp->size,  tmp->nr_pages);
 
         	for ( i = 0 ; i < tmp->nr_pages ; i++){
         		unsigned long addr = ( tmp->addr & PAGE_MASK )+ PAGE_SIZE * (i-1);
