@@ -175,7 +175,7 @@ void hyplet_free_mem(struct hyplet_vm *tv)
 
         list_for_each_entry_safe(tmp, tmp2, &tv->hyp_addr_lst, lst) {
 
-        	hyplet_info("unmap %lx, %lx size=%d pages=%d\n",
+        	printk("unmap %lx, %lx size=%d pages=%d\n",
         			tmp->addr, tmp->addr & PAGE_MASK,
 				tmp->size,  tmp->nr_pages);
 
