@@ -31,7 +31,7 @@ unsigned long kvm_uaddr_to_pfn(unsigned long uaddr)
 
 	nr = get_user_pages_fast(uaddr,1, 0, (struct page **)&pages);
 	if (nr <= 0){
-	       printk("TP: INSANE: failed to get user pages %p\n",(void *)uaddr);
+	     //  printk("TP: INSANE: failed to get user pages %p\n",(void *)uaddr);
 	       return 0x00;
 	}
 	pfn = page_to_pfn(pages[0]);
@@ -127,7 +127,6 @@ int __hyplet_map_user_data(long umem,int size,int flags)
 
 
 	if (flags & VM_EXEC) {
-		printk("hyplet: user code is mapped\n");
 		hyp->state  |= USER_CODE_MAPPED;
 	}
 	return 0;
