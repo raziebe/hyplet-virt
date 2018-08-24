@@ -141,6 +141,42 @@ int hyplet_set_rpc(struct hyplet_ctrl* hplt)
 	return 0;
 }
 
+void hyplet_offlet(unsigned int cpu)
+{
+	struct hyplet_vm *hyp;
+
+	hyp = hyplet_get_vm();
+	printk("offlet : Enter\n");
+/*
+ * Wait for an assignment.
+ */
+	while (hyp->tsk == NULL
+		|| hyp->user_hyplet_code == 0x00){
+		cpu_relax();
+	}
+
+	while (hyp->tsk != NULL) {
+		hyplet_call_hyp(hyplet_run_user);
+		cpu_relax();
+	}
+}
+
+int offlet_assign(int cpu,struct hyplet_ctrl* target_hplt,struct hyplet_vm *src_hyp)
+{
+	struct hyplet_vm *hyp = hyplet_get(cpu);
+
+	if (hyp == NULL){
+		printk("offlet: Failed to assign hyplet\n");
+		return -1;
+	}
+	hyp->tsk = current;
+	hyp->user_hyplet_code = target_hplt->__action.addr.addr;
+	hyp->hyplet_stack = src_hyp->hyplet_stack;
+	smp_mb();
+	printk("offlet: hyplet assigned to cpu %d\n",cpu);
+	return 0;
+}
+
 int hyplet_ctl(unsigned long arg)
 {
 	struct hyplet_vm *hyp = hyplet_get_vm();
@@ -180,11 +216,19 @@ int hyplet_ctl(unsigned long arg)
 				}
 				hyp->user_hyplet_code = hplt.__action.addr.addr;
 				break;
+
+		case OFFLET_SET_CALLBACK: // must be called in the processor in which the stack was set.
+				rc = hyplet_check_mapped((void *)&hplt.__action);
+				if (rc == 0) {
+					hyplet_info("Warning: Hyplet was not mapped\n");
+				}
+				return offlet_assign(hplt.__resource.cpu, &hplt, hyp);
+
 		case HYPLET_TRAP_IRQ:
-				return hyplet_trap_irq(hplt.__action.irq);
+				return hyplet_trap_irq(hplt.__resource.irq);
 
 		case HYPLET_UNTRAP_IRQ:
-				return hyplet_untrap_irq(hplt.__action.irq);
+				return hyplet_untrap_irq(hplt.__resource.irq);
 
 		case HYPLET_IMP_TIMER:
 				return hyplet_imp_timer();

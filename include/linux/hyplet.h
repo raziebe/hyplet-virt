@@ -149,7 +149,7 @@ void 		hyplet_trap_on(void);
 void 		hyplet_trap_off(void);
 int 		hyplet_check_mapped(void *action);
 int			hyplet_map_user(void);
-
+void 		hyplet_offlet(unsigned int cpu);
 
 unsigned long __hyp_text get_hyplet_addr(int hyplet_id,struct hyplet_vm * hyp);
 

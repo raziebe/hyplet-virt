@@ -122,8 +122,8 @@ int __hyplet_map_user_data(long umem,int size,int flags)
 	addr->nr_pages = pages;
 	list_add(&addr->lst, &hyp->hyp_addr_lst);
 
-	hyplet_info("pid %d user mapped %lx size=%d pages=%d\n",
-			current->pid,umem ,size, addr->nr_pages );
+//	hyplet_info("pid %d user mapped %lx size=%d pages=%d\n",
+//			current->pid,umem ,size, addr->nr_pages );
 
 
 	if (flags & VM_EXEC)

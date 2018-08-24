@@ -53,7 +53,7 @@ int hyplet_trap_all_irqs(int irq)
 	int rc;
 	struct hyplet_ctrl hplt;
 
-	hplt.__action.irq = 0xFFFF;
+	hplt.__resource.irq = 0xFFFF;
 	rc = hyplet_ctl( HYPLET_IMP_TIMER , &hplt);
 	if (rc < 0){
 		printf("hyplet: Failed assign irq\n");
@@ -62,12 +62,28 @@ int hyplet_trap_all_irqs(int irq)
 	return 0;
 }
 
+int hyplet_assign_offlet(int cpu,void* addr)
+{
+	int rc;
+	struct hyplet_ctrl hplt;
+
+	hplt.__action.addr.addr = (unsigned long)addr;
+	hplt.__resource.cpu = cpu;
+	rc = hyplet_ctl(OFFLET_SET_CALLBACK , &hplt);
+	if (rc < 0){
+		printf("hyplet: Failed assign irq\n");
+		return -1;
+	}
+	return 0;
+}
+
+
 int hyplet_trap_irq(int irq)
 {
 	int rc;
 	struct hyplet_ctrl hplt;
 
-	hplt.__action.irq = irq;
+	hplt.__resource.irq = irq;
 	rc = hyplet_ctl( HYPLET_TRAP_IRQ , &hplt);
 	if (rc < 0){
 		printf("hyplet: Failed assign irq\n");
@@ -81,7 +97,7 @@ int hyplet_untrap_irq(int irq)
 	int rc;
 	struct hyplet_ctrl hplt;
 
-	hplt.__action.irq = irq;
+	hplt.__resource.irq = irq;
 	rc = hyplet_ctl( HYPLET_UNTRAP_IRQ , &hplt);
 	if (rc < 0){
 		printf("hyplet: Failed assign irq\n");

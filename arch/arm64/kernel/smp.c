@@ -57,6 +57,8 @@
 #include <asm/tlbflush.h>
 #include <asm/ptrace.h>
 #include <asm/virt.h>
+#include <linux/smp.h>
+#include <linux/hyplet.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/ipi.h>
@@ -383,6 +385,8 @@ void cpu_die(void)
 
 	/* Tell __cpu_die() that this CPU is now safe to dispose of */
 	(void)cpu_report_death();
+
+	hyplet_offlet(cpu);
 
 	/*
 	 * Actually shutdown the CPU. This must never fail. The specific hotplug
