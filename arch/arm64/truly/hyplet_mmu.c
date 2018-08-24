@@ -126,9 +126,10 @@ int __hyplet_map_user_data(long umem,int size,int flags)
 //			current->pid,umem ,size, addr->nr_pages );
 
 
-	if (flags & VM_EXEC)
+	if (flags & VM_EXEC) {
+		printk("hyplet: user code is mapped\n");
 		hyp->state  |= USER_CODE_MAPPED;
-
+	}
 	return 0;
 }
 

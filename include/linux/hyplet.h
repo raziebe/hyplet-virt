@@ -80,8 +80,9 @@
 #define __int8  char
 typedef unsigned __int8 UCHAR;
 
-#define USER_CODE_MAPPED		UL(1) << 1
+#define USER_CODE_MAPPED		(UL(1) << 1)
 #define	IRQ_TRAP_ALL			UL(0xFFFF)
+#define HYPLET_OFFLINE_ON		(UL(2) << 1)
 
 struct hyp_addr {
 	struct list_head lst;

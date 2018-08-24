@@ -80,11 +80,10 @@ int main(int argc, char *argv[])
                         "please look in /proc/interrupts\n");
         return -1;
     }
-
     cpu = atoi(argv[1]);
     printf("setting offlet to cpu %d\n", cpu);
     hyplet_start();
     printf("Waiting for offlet %d for 5 seconds\n",cpu);
-    sleep(5);
+    sleep(1);
     printf("some global %d\n",some_global);
 }

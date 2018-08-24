@@ -36,11 +36,12 @@ int hyplet_init(void)
 	memset(tv, 0x00, sizeof(*tv));
 
 	for_each_possible_cpu(cpu) {
-		struct hyplet_vm *t = &per_cpu(HYPLETS, cpu);
-		if (tv != t) {
-			memcpy(t, tv, sizeof(*t));
+		struct hyplet_vm *hyp = &per_cpu(HYPLETS, cpu);
+		if (tv != hyp) {
+			memcpy(hyp, tv, sizeof(*tv));
 		}
-		INIT_LIST_HEAD(&t->hyp_addr_lst);
+		INIT_LIST_HEAD(&hyp->hyp_addr_lst);
+		hyp->state = HYPLET_OFFLINE_ON;
 	}
 	return 0;
 }
@@ -107,7 +108,7 @@ void close_hyplet(void *task)
 	hyp->hyplet_id = 0;
 	hyp->user_hyplet_code = 0;
 	hyplet_free_mem(hyp);
-	hyp->state  = 0;
+	hyp->state  = HYPLET_OFFLINE_ON;
 	hyp->elr_el2 = 0;
 	hyp->hyplet_stack = 0;
 	hyp->user_hyplet_code = 0;
@@ -146,19 +147,25 @@ void hyplet_offlet(unsigned int cpu)
 	struct hyplet_vm *hyp;
 
 	hyp = hyplet_get_vm();
-	printk("offlet : Enter\n");
-/*
- * Wait for an assignment.
- */
-	while (hyp->tsk == NULL
-		|| hyp->user_hyplet_code == 0x00){
-		cpu_relax();
-	}
+	printk("offlet : Enter %d\n",cpu);
 
-	while (hyp->tsk != NULL) {
-		hyplet_call_hyp(hyplet_run_user);
-		cpu_relax();
+	while (hyp->state & HYPLET_OFFLINE_ON) {
+		/*
+		 * Wait for an assignment.
+		 */
+		while (hyp->tsk == NULL
+				|| hyp->user_hyplet_code == 0x00){
+			cpu_relax();
+		}
+
+		printk("hyplet offlet: Start");
+		while (hyp->tsk != NULL) {
+			hyplet_call_hyp(hyplet_run_user);
+			cpu_relax();
+		}
+		printk("hyplet offlet : Ended\n");
 	}
+	printk("offlet : Exit %d\n",cpu);
 }
 
 int offlet_assign(int cpu,struct hyplet_ctrl* target_hplt,struct hyplet_vm *src_hyp)
@@ -169,6 +176,8 @@ int offlet_assign(int cpu,struct hyplet_ctrl* target_hplt,struct hyplet_vm *src_
 		printk("offlet: Failed to assign hyplet\n");
 		return -1;
 	}
+	hyp->state  |= HYPLET_OFFLINE_ON;
+	smp_mb();
 	hyp->tsk = current;
 	hyp->user_hyplet_code = target_hplt->__action.addr.addr;
 	hyp->hyplet_stack = src_hyp->hyplet_stack;
