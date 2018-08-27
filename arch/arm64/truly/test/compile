@@ -12,9 +12,11 @@ CC=/opt/${GCC}/bin/aarch64-linux-gnu-gcc
 
 # simple isr hyplet
 $CC   -I ../../../../include simple_hyplet.c hyplet_utils.c -o simple_hyplet
-$CC   -I ../../../../include offlet_hyplet.c hyplet_utils.c -o offlethyplet
+$CC   -I ../../../../include offlet_hyplet.c hyplet_utils.c -o offlet1
+$CC   -I ../../../../include offlet_hyplet1.c hyplet_utils.c -o offlet2
 
 
 sudo mount /dev/mapper/loop0p2 /media/fvp
-sudo cp offlethyplet /media/fvp//home/root/
+sudo cp offlet1 /media/fvp//home/root/
+sudo cp offlet2 /media/fvp//home/root/
 sudo umount /media/fvp

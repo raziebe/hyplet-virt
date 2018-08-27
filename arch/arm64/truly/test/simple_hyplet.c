@@ -20,7 +20,7 @@
 #include <linux/hyplet_user.h>
 #include "hyplet_utils.h"
 
-
+int cpu = -1;
 int irq = 0;
 int some_global = 0;
 
@@ -49,22 +49,22 @@ static int hyplet_start(void)
 	}
 // must fault it
 	memset(stack_addr, 0x00, stack_size);
-	if (hyplet_map_all()) {
+	if (hyplet_map_all(cpu)) {
 		fprintf(stderr, "hyplet: Failed to map a stack\n");
 		return -1;
 	}
 
-	if (hyplet_set_stack((long)stack_addr, stack_size)) {
+	if (hyplet_set_stack((long)stack_addr, stack_size, cpu)) {
 		fprintf(stderr, "hyplet: Failed to map a stack\n");
 		return -1;
 	}
 
-	if (hyplet_set_callback(user_hyplet)) {
+	if (hyplet_set_callback(user_hyplet, cpu)) {
 		fprintf(stderr, "hyplet: Failed to map code\n");
 		return -1;
 	}
 // begin trapping
-	if (hyplet_trap_irq(irq)) {
+	if (hyplet_trap_irq(irq, cpu)) {
 		printf("hyplet: Failed to map user's data\n");
 		return -1;
 	}

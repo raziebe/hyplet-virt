@@ -64,13 +64,13 @@ static inline void set_cntvoff_el2(long val)
 }
 
 int hyplet_ctl(int cmd,struct hyplet_ctrl *hplt);
-int hyplet_trap_irq(int irq);
-int hyplet_map(int cmd, void *addr,int size);
+int hyplet_trap_irq(int irq,int cpu);
+int hyplet_map(int cmd, int cpu, void *addr,int size);
 int hyplet_untrap_irq(int irq);
 int hyplet_rpc_set(void *user_hyplet,int func_id);
 long hyplet_rpc_call(int func_id,...);
-int hyplet_map_all(void);
-int hyplet_set_stack(unsigned long addr,int size);
+int hyplet_map_all(int cpu);
+int hyplet_set_stack(unsigned long addr,int size,int cpu);
 int hyplet_assign_offlet(int cpu, void* addr);
 
 #endif

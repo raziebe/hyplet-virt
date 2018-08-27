@@ -49,12 +49,12 @@ static int hyplet_start(void)
 	}
 // must fault it
 	memset(stack_addr, 0x00, stack_size);
-	if (hyplet_map_all()) {
+	if (hyplet_map_all(cpu)) {
 		fprintf(stderr, "hyplet: Failed to map a stack\n");
 		return -1;
 	}
 
-	if (hyplet_set_stack((long)stack_addr, stack_size)) {
+	if (hyplet_set_stack((long)stack_addr, stack_size, cpu)) {
 		fprintf(stderr, "hyplet: Failed to map a stack\n");
 		return -1;
 	}
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     int rc;
 
     if (argc <= 1 ){
-        puts("hyplet: must supply an irq , "
+        puts("hyplet: must supply an cpu index, "
                         "please look in /proc/interrupts\n");
         return -1;
     }
