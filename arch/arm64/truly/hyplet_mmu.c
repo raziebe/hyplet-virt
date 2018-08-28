@@ -152,9 +152,9 @@ int hyplet_check_mapped(struct hyplet_vm *hyp,void *action)
 void hyplet_free_mem(struct hyplet_vm *tv)
 {
         struct hyp_addr* tmp,*tmp2;
-        extern void __cpuc_flush_dcache_area(void *, size_t);
 
         list_for_each_entry_safe(tmp, tmp2, &tv->hyp_addr_lst, lst) {
+
 /*
         	hyplet_info("unmap %lx/%lx size=%d "
         			"pages=%d flags=%x\n",
@@ -163,16 +163,17 @@ void hyplet_free_mem(struct hyplet_vm *tv)
 				tmp->size,
 				tmp->nr_pages, tmp->flags);
 */
+
         	hyp_user_unmap( tmp->addr , PAGE_SIZE,  1 );
         	hyplet_call_hyp(hyplet_invld_tlb,  tmp->addr);
 
          	if (tmp->flags & VM_EXEC)
-        			flush_icache_range(tmp->addr,
-    						tmp->addr + tmp->size);
+        			flush_icache_range(tmp->addr, tmp->addr + tmp->size);
+
          	if (tmp->flags & (VM_READ | VM_WRITE))
-    			__flush_cache_user_range(tmp->addr,
-    					tmp->addr + tmp->size);
-        	list_del(&tmp->lst);
+    			__flush_cache_user_range(tmp->addr, tmp->addr + tmp->size);
+
+         	list_del(&tmp->lst);
         	kfree(tmp);
         }
 }
