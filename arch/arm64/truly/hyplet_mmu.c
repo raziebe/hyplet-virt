@@ -170,10 +170,12 @@ void hyplet_free_mem(struct hyplet_vm *tv)
          	if (tmp->flags & VM_EXEC)
         			flush_icache_range(tmp->addr, tmp->addr + tmp->size);
 
-         	if (tmp->flags & (VM_READ | VM_WRITE))
+         	if (tmp->flags & (VM_READ | VM_WRITE)){
     			__flush_cache_user_range(tmp->addr, tmp->addr + tmp->size);
-
+		}
          	list_del(&tmp->lst);
         	kfree(tmp);
         }
+        hyplet_call_hyp(hyplet_invld_all_tlb);
 }
+

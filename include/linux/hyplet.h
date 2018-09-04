@@ -138,7 +138,7 @@ void 		hyplet_user_unmap(unsigned long umem);
 int  		hyplet_run(int irq);
 int  		hyplet_trapped_irq(struct hyplet_vm *);
 int  		hyplet_run_user(void);
-int			hyplet_dump_irqs(void);
+int		hyplet_dump_irqs(void);
 int 		hyplet_hwirq_to_irq(int);
 void 		hyplet_stop(void *info);
 struct 		hyplet_vm* hyplet_get(int cpu);
@@ -150,8 +150,9 @@ int 		hyplet_imp_timer(struct hyplet_vm *);
 void 		hyplet_trap_on(void);
 void 		hyplet_trap_off(void);
 int 		hyplet_check_mapped(struct hyplet_vm *,void *action);
-int			hyplet_map_user(struct hyplet_vm *);
+int		hyplet_map_user(struct hyplet_vm *);
 void 		hyplet_offlet(unsigned int cpu);
+void		hyplet_invld_all_tlb(void);
 
 unsigned long __hyp_text get_hyplet_addr(int hyplet_id,struct hyplet_vm * hyp);
 

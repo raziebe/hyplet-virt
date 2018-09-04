@@ -149,9 +149,16 @@ ENDPROC(hyplet_get_tcr_el1)
 
 ENTRY(hyplet_invld_tlb)
 	tlbi vae2, x0
+	dsb sy
     tlbi vale2, x0
+	dsb sy
 	ret
 ENDPROC(hyplet_invld_tlb)
+
+ENTRY(hyplet_invld_all_tlb)
+	tlbi alle2
+	ret
+ENDPROC(hyplet_invld_all_tlb)
 
 /* 
   x0 address
