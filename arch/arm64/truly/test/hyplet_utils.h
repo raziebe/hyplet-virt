@@ -29,26 +29,18 @@ static const int arm_arch_timer_reread = 1;
 	_val; \
 })
 
-static inline long cycles(void) {
+static inline long __cycles(void) {
 	long cval;
 	cval = ARCH_TIMER_READ("cntvct_el0"); 		
 	return cval;
 }
 
-static inline long cycles_us(void) {
+// 19.2Mhz clock divisor
+#define CLOCK_DIVISOR	52.083
 
-	struct timeval t;
-	
-	gettimeofday(&t,NULL);
-	
-	return t.tv_sec*1000000 + t.tv_usec;
-
-}
-
-static inline u64 cycles_to_ns()
-{
-	u64 t = cycles();
-	return t * 52;
+static inline u64 hyp_gettime() {
+	u64 t = __cycles();
+	return t * CLOCK_DIVISOR;
 }
 
 static inline long cntvoff_el2(void)
@@ -63,15 +55,31 @@ static inline void set_cntvoff_el2(long val)
 	asm ("msr  cntvoff_el2, %0" : "=r" (val) );
 }
 
+#define PRINT_LINES	10
+
+struct hyp_fmt {
+	char fmt[128];
+	long i[7];
+	double f[7];
+};
+
+struct hyp_state {
+	int fmt_idx;
+	struct hyp_fmt fmt[PRINT_LINES];
+};
+
 int hyplet_ctl(int cmd,struct hyplet_ctrl *hplt);
 int hyplet_trap_irq(int irq,int cpu);
-int hyplet_map(int cmd, int cpu, void *addr,int size);
-int hyplet_untrap_irq(int irq);
-int hyplet_rpc_set(void *user_hyplet,int func_id);
+int hyplet_map(void *addr,int size,int cpu);
+int hyplet_untrap_irq(int irq,int cpu);
+int hyplet_rpc_set(void *user_hyplet,int func_id,int cpu);
 long hyplet_rpc_call(int func_id,...);
 int hyplet_map_all(int cpu);
-int hyplet_set_stack(unsigned long addr,int size,int cpu);
+int hyplet_set_stack(void* addr,int size,int cpu);
 int hyplet_assign_offlet(int cpu, void* addr);
+int hyp_print(const char *format, ...);
+int hyp_print2(struct hyp_fmt *format);
+void print_hyp(int idx);
 
 #endif
 
