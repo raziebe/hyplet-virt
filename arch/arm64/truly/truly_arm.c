@@ -225,7 +225,7 @@ static int tp_arch_init(void)
 		}
 	}
 
-	printk("HYP mode is available\n");
+	printk("HYP mode is available rc-22\n");
 	err = init_hyp_mode();
 	if (err)
 		return -1;
