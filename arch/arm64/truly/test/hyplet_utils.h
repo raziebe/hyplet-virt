@@ -80,6 +80,6 @@ int hyplet_assign_offlet(int cpu, void* addr);
 int hyp_print(const char *format, ...);
 int hyp_print2(struct hyp_fmt *format);
 void print_hyp(int idx);
-
+int hyp_wait(int cpu,int ms);
 #endif
 

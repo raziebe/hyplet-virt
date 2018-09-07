@@ -195,6 +195,14 @@ int hyplet_rpc_set(void *user_hyplet,int func_id,int cpu)
 	return 0;
 }
 
+int hyp_wait(int cpu,int ms)
+{
+	struct hyplet_ctrl hplt;
+
+     	hplt.__resource.timeout_ms = ms;
+	hplt.__resource.cpu = cpu;
+	return hyplet_ctl(HYPLET_WAIT, &hplt);
+}
 
 /*
  * Collect & Cache the arguments 

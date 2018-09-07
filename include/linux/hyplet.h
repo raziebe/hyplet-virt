@@ -95,6 +95,7 @@ struct hyp_addr {
 
 };
 
+
 struct hyplet_vm {
 	unsigned int irq_to_trap __attribute__ ((packed));
 	int	hyplet_id __attribute__ ((packed));//  the hyplet of this core
@@ -109,12 +110,20 @@ struct hyplet_vm {
 	unsigned long user_hyplet_code;	// this core hyplet codes
 
 	struct task_struct *tsk;
+ 	struct list_head callbacks_lst;
+ 	spinlock_t lst_lock;
 
  	struct list_head hyp_addr_lst;
  	unsigned long state __attribute__ ((packed));
 	unsigned long faulty_elr_el2 __attribute__ ((packed));
 	unsigned long faulty_esr_el2 __attribute__ ((packed));
 } __attribute__ ((aligned (8)));
+
+struct hyp_wait{
+	wait_queue_head_t wait_queue;
+	void (*offlet_action)(struct hyplet_vm *,struct hyp_wait *);
+	struct list_head next;
+};
 
 extern char __hyplet_vectors[];
 

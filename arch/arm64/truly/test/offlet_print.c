@@ -84,8 +84,9 @@ int main(int argc, char *argv[])
 
     hyplet_start();
     printf("Waiting for offlet %d for 5 seconds\n",cpu);
-    for (i = 0 ; i < 10 ; i++){
-    	usleep(100);
-    	print_hyp(i);
-    }
+    usleep(100);
+    hyp_wait(cpu, 10);
+    print_hyp(i);
 }
+
+
