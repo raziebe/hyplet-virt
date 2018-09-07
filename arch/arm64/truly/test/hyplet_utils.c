@@ -85,7 +85,7 @@ int hyplet_drop_cpu(int cpu)
 		perror("open:");
 		return -1;
 	}
-	puts(cpustr);
+
 	bytes = read(fd,status,sizeof(status));
 	if (bytes <= 0 ){
 		perror("read:");
@@ -108,6 +108,7 @@ int hyplet_drop_cpu(int cpu)
 		close(fd);
 		return ret;
 	}
+
 	printf("insane status %s\n",status);
 	close(fd);
 	return -1;
@@ -206,12 +207,15 @@ int hyp_wait(int cpu,int ms)
 	return hyplet_ctl(HYPLET_WAIT, &hplt);
 }
 
-int hyp_strlen(const char *str)
+/*
+ * hyp_strlen and others can be refrained by statiticly linking
+*/
+size_t strlen(const char *str)
 {
 	int i = 0;
 
 	for (; *str != 0 ; i++)
-			str++;
+		str++;
 	return i;
 }
 
@@ -234,7 +238,7 @@ int hyp_print(const char *fmt, ...)
      int i = 0,f = 0;
      int idx = hypstate.fmt_idx;
 
-     hyp_memcpy(&hypstate.fmt[idx].fmt[0], fmt, hyp_strlen(fmt) );
+     memcpy(&hypstate.fmt[idx].fmt[0], fmt, strlen(fmt) );
 
      va_start(ap, fmt);
      while (*fmt) {
@@ -276,7 +280,7 @@ int hyp_print(const char *fmt, ...)
 }
 
 
-void print_hyp(int idx) {
+static void __print_hyp(int idx) {
 
 	struct hyp_fmt fmt;
 
@@ -287,3 +291,7 @@ void print_hyp(int idx) {
 	hyp_print2(&hypstate.fmt[idx]);
 }
 
+void print_hyp(void) 
+{
+	__print_hyp(hypstate.fmt_idx);
+}

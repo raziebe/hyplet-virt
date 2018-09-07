@@ -20,7 +20,12 @@ unsigned long next = 0;
 */
 long user_print(void *opaque)
 {
-	hyp_print("iters %d\n",iters);
+	char buf[100];
+	int l ;
+	
+	l = strlen("ssssss");
+	hyp_print("iters %d len=%d\n",
+		iters,l);
 	iters++;
 	return 0;
 }
@@ -75,9 +80,6 @@ int main(int argc, char *argv[])
     }
    
     cpu = atoi(argv[1]);
-    printf("Set the offlet to cpu %d "
-		"interval %d Version rc-1.7\n", cpu, interval_ns);
-
     if (hyplet_drop_cpu(cpu) < 0 ){
 		printf("Failed to drop processor\n");
 		return -1;
@@ -85,9 +87,12 @@ int main(int argc, char *argv[])
 
     hyplet_start();
     printf("Waiting for offlet %d for 100 useconds\n",cpu);
-    sleep(10);
-    hyp_wait(cpu, 10);
-    print_hyp(0);
+
+    
+    for (;i < 100; i++) {
+	print_hyp();
+    	hyp_wait(cpu, 100);
+    }
 }
 
 
