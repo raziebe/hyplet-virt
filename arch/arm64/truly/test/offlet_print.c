@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
    
     cpu = atoi(argv[1]);
     printf("Set the offlet to cpu %d "
-		"interval %d Version rc-1.5\n", cpu, interval_ns);
+		"interval %d Version rc-1.6\n", cpu, interval_ns);
 
     hyplet_drop_cpu(cpu);
 
