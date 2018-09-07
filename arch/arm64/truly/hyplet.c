@@ -42,6 +42,7 @@ int hyplet_init(void)
 		INIT_LIST_HEAD(&hyp->hyp_addr_lst);
 		INIT_LIST_HEAD(&hyp->callbacks_lst);
 		spin_lock_init(&hyp->lst_lock);
+
 		hyp->state = HYPLET_OFFLINE_ON;
 	}
 	return 0;
@@ -164,6 +165,7 @@ static void signal_any(struct hyplet_vm *hyp)
     struct hyp_wait *tmp;
 
     spin_lock_irqsave(&hyp->lst_lock, flags);
+
     list_for_each_entry(tmp, &hyp->callbacks_lst, next) {
 		tmp->offlet_action(hyp, tmp);
 	}
@@ -244,22 +246,6 @@ int hyplet_set_rpc(struct hyplet_ctrl* hplt,struct hyplet_vm *hyp)
 	return 0;
 }
 
-/*
-static void cpu_call(void *param)
-{
-	printk("%d cpu_call\n",raw_smp_processor_id());
-}
-
-call_single_data_t smpfunc;
-
-void test_ipi(int cpu)
-{
-	memset(&smpfunc,0x00,sizeof(smpfunc));
-	smpfunc.func = cpu_call;
-	smp_call_function_single_async(cpu, &smpfunc);
-}
-*/
-
 int offlet_assign(int cpu,struct hyplet_ctrl* target_hplt,struct hyplet_vm *src_hyp)
 {
 	struct hyplet_vm *hyp = hyplet_get(cpu);
@@ -268,8 +254,6 @@ int offlet_assign(int cpu,struct hyplet_ctrl* target_hplt,struct hyplet_vm *src_
 		hyplet_err("Failed to assign hyplet in %d\n",cpu);
 		return -1;
 	}
-
-	printk("offlet %p %p\n",target_hplt, src_hyp);
 	hyp->state  = src_hyp->state;
 	smp_mb();
 	hyp->tsk = current;
@@ -277,7 +261,7 @@ int offlet_assign(int cpu,struct hyplet_ctrl* target_hplt,struct hyplet_vm *src_
 	hyp->hyplet_stack = src_hyp->hyplet_stack;
 	smp_mb();
 	printk("offlet: hyplet assigned to cpu %d\n",cpu);
-//	test_ipi(2);
+
 	return 0;
 }
 
@@ -300,8 +284,6 @@ int hyplet_ctl(unsigned long arg)
 
 	if (hplt.__resource.cpu >= 0)
 			hyp = hyplet_get(hplt.__resource.cpu);
-
-	printk("offlet: assigning to cpu  %d \n",hplt.__resource.cpu);
 
 	switch (hplt.cmd)
 	{
