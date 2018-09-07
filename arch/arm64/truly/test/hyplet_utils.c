@@ -229,6 +229,26 @@ int hyp_memcpy(char *dst, const char *src,int len)
 	return i;
 }
 
+char* hyp_strncpy(char *dst, const char *src,int n)
+{
+	int i = 0;
+
+	for (; i < n; i++)
+		dst[i] = src[i];
+	return &dst[0];
+}
+
+char* strcpy(char *dst, const char *src)
+{
+	int i = 0;
+	int len;
+
+	len = strlen(src);
+	for (; i < len; i++)
+		dst[i] = src[i];
+	return &dst[0];
+}
+
 /*
  * Collect & Cache the arguments 
 */

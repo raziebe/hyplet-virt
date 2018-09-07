@@ -23,7 +23,7 @@ long user_print(void *opaque)
 	char buf[100];
 	int l ;
 	
-	l = strlen("ssssss");
+	memcpy(buf, "ssssss",5);
 	hyp_print("iters %d len=%d\n",
 		iters,l);
 	iters++;
