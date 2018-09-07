@@ -143,20 +143,21 @@ __hyp_panic_str:
 	" HPFAR:%016x RAZDBG:%p\nTrulyCxt:%p\n\0"
 
 ENTRY(hyplet_get_tcr_el1)
-       mrs     x0, tcr_el1
-       ret
+	mrs     x0, tcr_el1
+	ret
 ENDPROC(hyplet_get_tcr_el1)
 
 ENTRY(hyplet_invld_tlb)
 	tlbi vae2, x0
 	dsb sy
-    tlbi vale2, x0
+    	tlbi vale2, x0
 	dsb sy
 	ret
 ENDPROC(hyplet_invld_tlb)
 
 ENTRY(hyplet_invld_all_tlb)
 	tlbi alle2
+	dsb sy
 	ret
 ENDPROC(hyplet_invld_all_tlb)
 
