@@ -18,14 +18,10 @@ unsigned long next = 0;
 /*
 	Put whatever you want here
 */
-long user_print(void *opaque)
+long user_print(long a1,long a2,long a3,long a4)
 {
-	char buf[100];
-	int l ;
-	
-	memcpy(buf, "ssssss",5);
-	hyp_print("iters %d len=%d\n",
-		iters,l);
+	hyp_print("iters %d a=%ld,%ld,%ld,%ld\n",
+		iters, a1, a2, a3, a4);
 	iters++;
 	return 0;
 }

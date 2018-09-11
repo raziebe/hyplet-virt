@@ -11,8 +11,7 @@ READELF=/opt/${GCC}/bin/aarch64-linux-gnu-readelf
 OBJDUMP=/opt/${GCC}/bin/aarch64-linux-gnu-objdump
 
 # simple isr hyplet
-$CC --static   -I ../../../../include offlet_print.c hyplet_utils.c  hyplet_utils.S  -o offprint
-
+$CC --static   -I ../../../../include offlet_print.c hyplet_utils.c  hyplet_utilsS.S  -o offprint
 
 sudo mount /dev/mapper/loop0p2 /media/fvp
 sudo cp offprint /media/fvp//home/root/offprint
