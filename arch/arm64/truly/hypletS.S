@@ -330,6 +330,8 @@ ENTRY(hyplet_run_user)
 /*
  * switch stacks back
 */
+	mrs		x9, tpidr_el2
+	str		x0, [x9,#HYPLET_ARG1]
 	mrs 	x1, spsel
 	orr 	w1, w1, #0x1
 	msr 	spsel,x1
