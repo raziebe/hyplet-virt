@@ -164,7 +164,8 @@ int 		hyplet_check_mapped(struct hyplet_vm *,void *action);
 int			hyplet_map_user(struct hyplet_vm *);
 void 		hyplet_offlet(unsigned int cpu);
 void		hyplet_invld_all_tlb(void);
-void 		hyplet_init_ipa(void *vm);
+void 		hyplet_init_ipa(void);
+struct hyplet_vm* hyplet_get_vm(void);
 unsigned 	long hyplet_get_tcr_el1(void);
 unsigned long __hyp_text get_hyplet_addr(int hyplet_id,struct hyplet_vm * hyp);
 

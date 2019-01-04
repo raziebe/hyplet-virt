@@ -20,7 +20,7 @@ struct hyplet_vm* hyplet_get(int cpu){
 	return &per_cpu(HYPLETS, cpu);
 }
 
-static struct hyplet_vm* hyplet_get_vm(void){
+struct hyplet_vm* hyplet_get_vm(void){
 	return this_cpu_ptr(&HYPLETS);
 }
 /*
@@ -32,7 +32,6 @@ int hyplet_init(void)
 	int cpu = 0;
 
 	tv = hyplet_get_vm();
-	memset(tv, 0x00, sizeof(*tv));
 
 	for_each_possible_cpu(cpu) {
 		struct hyplet_vm *hyp = &per_cpu(HYPLETS, cpu);
@@ -44,6 +43,7 @@ int hyplet_init(void)
 		spin_lock_init(&hyp->lst_lock);
 
 		hyp->state = HYPLET_OFFLINE_ON;
+		hyplet_info("cpu %d HYP vttbr_el2=%lx\n", cpu, hyp->vttbr_el2);
 	}
 	return 0;
 }
@@ -79,7 +79,7 @@ void hyplet_setup(void)
 	unsigned long vbar_el2_current;
 
 	hyplet_map_kern();
-	hyplet_init_ipa(hyp);
+
 	vbar_el2_current = hyplet_get_vectors();
 	if (vbar_el2 != vbar_el2_current) {
 		hyplet_info("vbar_el2 should restore\n");

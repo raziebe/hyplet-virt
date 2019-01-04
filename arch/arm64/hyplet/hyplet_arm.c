@@ -95,6 +95,7 @@ static int init_hyp_mode(void)
 	if (err)
 		goto out_err;
 
+
 	/*
 	 * Allocate stack pages for Hypervisor-mode
 	 */
@@ -225,11 +226,11 @@ static int hyplet_arch_init(void)
 		}
 	}
 
-	printk("HYP mode is available rc-22\n");
+	printk("HYP mode is available rc-23\n");
 	err = init_hyp_mode();
 	if (err)
 		return -1;
-
+	hyplet_init_ipa();
 	err = hyplet_init();
 	if (err)
 		return err;

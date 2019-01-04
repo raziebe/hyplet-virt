@@ -126,13 +126,15 @@ void create_level_zero(struct hyplet_vm *tvm, struct page *pg, long *addr)
 
 }
 
-void hyplet_init_ipa(void *vm)
+void hyplet_init_ipa(void)
 {
-	struct hyplet_vm *tvm = (struct hyplet_vm *)vm;
 	long addr = 0;
 	long vmid = 012;
 	struct page *pg_lvl_zero;
 	int starting_level = 1;
+	struct hyplet_vm *tvm = hyplet_get_vm();;
+
+
 /*
  tosz = 25 --> 39bits 64GB
 	0-11
