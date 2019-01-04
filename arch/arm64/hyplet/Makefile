@@ -6,5 +6,6 @@ obj-$(CONFIG_HYPLET) += \
 	hyplet_gic.o \
 	hyplet_rpc.o \
 	hyp-init.o \
-	truly_arm.o \
+	hyplet_arm.o \
+	hyplet_ipa.o \
 	mmu.o

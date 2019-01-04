@@ -18,7 +18,7 @@
 #include <linux/linkage.h>
 #include <asm/assembler.h>
 #include "hyp_mmu.h"
-#include "tp_hyp_flags.h"
+#include "hyp_flags.h"
 
 #include <asm/pgtable-hwdef.h>
 

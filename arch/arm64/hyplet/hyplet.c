@@ -48,8 +48,10 @@ int hyplet_init(void)
 	return 0;
 }
 
-
-void hyplet_map(void)
+/*
+ * Map EL2/EL1 shared data
+ * */
+void hyplet_map_kern(void)
 {
 	int err;
 	struct hyplet_vm *hyp = hyplet_get_vm();
@@ -61,7 +63,6 @@ void hyplet_map(void)
 	} else {
 		hyplet_info("Mapped hyplet state");
 	}
-
 }
 
 int __hyp_text is_hyp(void)
@@ -77,8 +78,8 @@ void hyplet_setup(void)
 	unsigned long vbar_el2 = (unsigned long)KERN_TO_HYP(__hyplet_vectors);
 	unsigned long vbar_el2_current;
 
-	hyplet_map();
-	
+	hyplet_map_kern();
+	hyplet_init_ipa(hyp);
 	vbar_el2_current = hyplet_get_vectors();
 	if (vbar_el2 != vbar_el2_current) {
 		hyplet_info("vbar_el2 should restore\n");
@@ -87,7 +88,7 @@ void hyplet_setup(void)
 	hyplet_call_hyp(hyplet_on, hyp);
 }
 
-int is_hyplet_on(void)
+int is_isr_hyplet_on(void)
 {
 	struct hyplet_vm *hyp = hyplet_get_vm();
 	return (hyp->irq_to_trap != 0);

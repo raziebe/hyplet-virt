@@ -3,7 +3,7 @@
 #include <asm/memory.h>
 #include <asm/asm-offsets.h>
 #include "hyp_mmu.h"
-#include "tp_hyp_flags.h"
+#include "hyp_flags.h"
 
 .text
 .pushsection	.hyp.text, "ax" // borrow  hyp.text

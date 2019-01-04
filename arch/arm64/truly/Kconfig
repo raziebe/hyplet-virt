@@ -1,7 +1,0 @@
-#
-# Hyplet Protect 
-#
-config HYPLET
-	bool "hyplet"
-	---help---
-	todo

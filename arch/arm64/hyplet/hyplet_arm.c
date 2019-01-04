@@ -70,7 +70,7 @@ static void cpu_init_hyp_mode(void *discard)
 	boot_pgd_ptr = tp_mmu_get_boot_httbr();
 	hyp_stack_ptr = stack_page + PAGE_SIZE;
 	vector_ptr = get_hyp_vector();
-	printk("assign truly vector %lx\n",hyp_stack_ptr);
+	printk("assign hyplet vector %lx\n",hyp_stack_ptr);
 	__cpu_init_hyp_mode(boot_pgd_ptr, pgd_ptr, hyp_stack_ptr, vector_ptr);
 	hyplet_setup();
 }
@@ -152,7 +152,7 @@ out_err:
 }
 
 #if 0 // older kernels
-int __attribute_const__ tp_target_cpu(void)
+static int __attribute_const__  target_cpu(void)
 {
 	switch (read_cpuid_part()) {
 	case ARM_CPU_PART_CORTEX_A7:
@@ -168,7 +168,7 @@ int __attribute_const__ tp_target_cpu(void)
 
 #define ARM_TARGET_GENERIC_V8 1
 
-int __attribute_const__ tp_target_cpu(void)
+static int __attribute_const__ target_cpu(void)
 {
         unsigned long implementor = read_cpuid_implementor();
         unsigned long part_number = read_cpuid_part_number();
@@ -199,15 +199,15 @@ int __attribute_const__ tp_target_cpu(void)
 
 #endif
 
-static void check_tp_target_cpu(void *ret)
+static void check_target_cpu(void *ret)
 {
-	*(int *)ret = tp_target_cpu();
+	*(int *)ret = target_cpu();
 }
 
 /**
  * Initialize Hyp-mode and memory mappings on all CPUs.
  */
-static int tp_arch_init(void)
+static int hyplet_arch_init(void)
 {
 	int err;
 	int ret, cpu;
@@ -218,7 +218,7 @@ static int tp_arch_init(void)
 	}
 
 	for_each_online_cpu(cpu) {
-		smp_call_function_single(cpu, check_tp_target_cpu, &ret, 1);
+		smp_call_function_single(cpu, check_target_cpu, &ret, 1);
 		if (ret < 0) {
 			printk("Error, CPU %d not supported!\n", cpu);
 			return -ENODEV;
@@ -242,11 +242,11 @@ static int tp_arch_init(void)
 }
 
 
-static int truly_boot_start(void)
+static int hyplet_boot_start(void)
 {
 	int rc = 0;
-	rc = tp_arch_init();
+	rc = hyplet_arch_init();
 	return rc;
 }
 
-module_init(truly_boot_start);
+module_init(hyplet_boot_start);
