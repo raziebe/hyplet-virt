@@ -45,7 +45,7 @@
 
 
 extern char  __hyp_idmap_text_start[], __hyp_idmap_text_end[];
-extern char __tp_hyp_init[];
+extern char __hyplet_init_vec[];
 
 static pgd_t *boot_hyp_pgd;
 pgd_t *hyp_pgd;
@@ -424,7 +424,7 @@ int tp_mmu_init(void)
 
 	hyp_idmap_start = virt_to_phys(__hyp_idmap_text_start);
 	hyp_idmap_end = virt_to_phys(__hyp_idmap_text_end);
-	hyp_idmap_vector = virt_to_phys(__tp_hyp_init);
+	hyp_idmap_vector = virt_to_phys(__hyplet_init_vec);
 
 	/*
 	 * We rely on the linker script to ensure at build time that the HYP
