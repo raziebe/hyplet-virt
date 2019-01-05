@@ -173,7 +173,7 @@ unsigned long __hyp_text get_hyplet_addr(int hyplet_id,struct hyplet_vm * hyp);
 
 
 #define hyplet_info(fmt, ...) \
-		pr_info("hyplet %s [%i]: " fmt, __func__,raw_smp_processor_id(), ## __VA_ARGS__)
+		pr_info("hyplet [%i]: " fmt, raw_smp_processor_id(), ## __VA_ARGS__)
 
 #define hyplet_err(fmt, ...) \
 		pr_err("hyplet [%i]: " fmt, raw_smp_processor_id(), ## __VA_ARGS__)

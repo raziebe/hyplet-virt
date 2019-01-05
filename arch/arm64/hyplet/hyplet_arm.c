@@ -64,11 +64,11 @@ static void cpu_init_hyp_mode(void *discard)
 	unsigned long vector_ptr;
 
 	/* Switch from the HYP stub to our own HYP init vector */
-	__hyp_set_vectors(tp_get_idmap_vector());
+	__hyp_set_vectors(hyp_get_idmap_vector());
 
-	pgd_ptr = tp_mmu_get_httbr();
+	pgd_ptr = hyp_mmu_get_httbr();
 	stack_page = __this_cpu_read(hyp_stack_page);
-	boot_pgd_ptr = tp_mmu_get_boot_httbr();
+	boot_pgd_ptr = hyp_mmu_get_boot_httbr();
 	hyp_stack_ptr = stack_page + PAGE_SIZE;
 	vector_ptr = get_hyp_vector();
 	/*
@@ -76,7 +76,7 @@ static void cpu_init_hyp_mode(void *discard)
 	 */
 	__cpu_init_hyp_mode(boot_pgd_ptr, pgd_ptr, hyp_stack_ptr, vector_ptr);
 	hyp = hyplet_get_vm();
-	hyplet_info("vttbr_el2=%lx\n",hyp->vttbr_el2);
+
 	hyplet_call_hyp(hyplet_on, hyp);
 }
 
@@ -88,12 +88,10 @@ static int init_hyp_mode(void)
 	int cpu;
 	int err = 0;
 
-
-	hyplet_info("Initializing...\n");
 	/*
 	 * Allocate Hyp PGD and setup Hyp identity mapping
 	 */
-	err = tp_mmu_init();
+	err = hyp_mmu_init();
 	if (err)
 		goto out_err;
 
@@ -155,12 +153,8 @@ static int init_hyp_mode(void)
 		if (err) {
 			hyplet_err("Failed to map hyplet state");
 			goto out_err;
-		} else {
-			hyplet_info("Mapped hyplet state");
 		}
 	}
-
-	printk("Hyp mode initialized successfully\n");
 	return 0;
 
 out_err:
@@ -253,7 +247,10 @@ static int hyplet_arch_init(void)
 	INIT_LIST_HEAD(&this_hyp->callbacks_lst);
 	spin_lock_init(&this_hyp->lst_lock);
 	this_hyp->state = HYPLET_OFFLINE_ON;
-	this_hyp->hcr_el2 =  HCR_RW | HCR_VM;
+	this_hyp->hcr_el2 =  HCR_RW;
+#ifdef __HYPLET_VM__
+	this_hyp->hcr_el2 |= HCR_VM;
+#endif
 	/* initialize VM if needed */
 	hyplet_init_ipa();
 	for_each_possible_cpu(cpu) {
@@ -271,8 +268,12 @@ static int hyplet_arch_init(void)
 		hyp->vttbr_el2 = this_hyp->vttbr_el2;
 
 	}
-
 	on_each_cpu(cpu_init_hyp_mode, NULL,1);
+	if (this_hyp->hcr_el2 & HCR_VM) {
+		hyplet_info("Microvisor VM Initialized\n");
+		} else{
+		hyplet_info("Microvisor Initialized\n");
+	}
 	return 0;
 }
 

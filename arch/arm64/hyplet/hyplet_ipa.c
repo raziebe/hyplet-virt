@@ -3,6 +3,8 @@
 #include <linux/hyplet.h>
 #include <linux/delay.h>
 #include "hyp_mmu.h"
+
+
 //
 // alloc 512 * 4096  = 2MB
 //
@@ -57,8 +59,6 @@ void create_level_two(struct page *pg, long *addr)
 		l2_descriptor[i] =
 		    (page_to_phys(pg_lvl_three + i)) | DESC_TABLE_BIT |
 		    DESC_VALID_BIT;
-
-		//tp_info("L2 IPA %lx\n", l2_descriptor[i]);
 	}
 
 	kunmap(pg);
@@ -92,7 +92,7 @@ void create_level_one(struct page *pg, long *addr)
 	kunmap(pg);
 }
 
-void create_level_zero(struct hyplet_vm *tvm, struct page *pg, long *addr)
+void create_level_zero(struct hyplet_vm *vm, struct page *pg, long *addr)
 {
 	struct page *pg_lvl_one;
 	long *l0_descriptor;;
@@ -113,13 +113,8 @@ void create_level_zero(struct hyplet_vm *tvm, struct page *pg, long *addr)
 	}
 
 	memset(l0_descriptor, 0x00, PAGE_SIZE);
-
 	l0_descriptor[0] = (page_to_phys(pg_lvl_one)) | DESC_TABLE_BIT | DESC_VALID_BIT;
-
-	tvm->pg_lvl_one = (unsigned long)pg_lvl_one;
-
-	printk("hyplet: L0 IPA %lx\n", l0_descriptor[0]);
-
+	vm->pg_lvl_one = (unsigned long)pg_lvl_one;
 	kunmap(pg);
 
 }
@@ -130,7 +125,7 @@ void hyplet_init_ipa(void)
 	long vmid = 012;
 	struct page *pg_lvl_zero;
 	int starting_level = 1;
-	struct hyplet_vm *tvm = hyplet_get_vm();;
+	struct hyplet_vm *vm = hyplet_get_vm();;
 
 /*
  tosz = 25 --> 39bits 64GB
@@ -148,19 +143,19 @@ void hyplet_init_ipa(void)
 	}
 
 	get_page(pg_lvl_zero);
-	create_level_zero(tvm, pg_lvl_zero, &addr);
+	create_level_zero(vm, pg_lvl_zero, &addr);
 
 	if (starting_level == 0)
-		tvm->vttbr_el2 = page_to_phys(pg_lvl_zero) | (vmid << 48);
+		vm->vttbr_el2 = page_to_phys(pg_lvl_zero) | (vmid << 48);
 	else
-		tvm->vttbr_el2 = page_to_phys((struct page *) tvm->pg_lvl_one) | (vmid << 48);
+		vm->vttbr_el2 = page_to_phys((struct page *) vm->pg_lvl_one) | (vmid << 48);
 
-	make_vtcr_el2(tvm);
+	make_vtcr_el2(vm);
 }
 
 
 // D-2142
-void make_vtcr_el2(struct hyplet_vm *tvm)
+void make_vtcr_el2(struct hyplet_vm *vm)
 {
 	long vtcr_el2_t0sz;
 	long vtcr_el2_sl0;
@@ -178,7 +173,7 @@ void make_vtcr_el2(struct hyplet_vm *tvm)
 	vtcr_el2_tg0 = (hyplet_get_tcr_el1() & 0xc000) >> 14;
 	vtcr_el2_ps = (hyplet_get_tcr_el1() & 0x700000000) >> 32;
 
-	tvm->vtcr_el2 = (vtcr_el2_t0sz) |
+	vm->vtcr_el2 = (vtcr_el2_t0sz) |
 	    (vtcr_el2_sl0 << VTCR_EL2_SL0_BIT_SHIFT) |
 	    (vtcr_el2_irgn0 << VTCR_EL2_IRGN0_BIT_SHIFT) |
 	    (vtcr_el2_orgn0 << VTCR_EL2_ORGN0_BIT_SHIFT) |
