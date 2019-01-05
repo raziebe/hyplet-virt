@@ -1,3 +1,5 @@
+
+
 #include <linux/module.h>
 #include <linux/linkage.h>
 #include <linux/init.h>
@@ -12,7 +14,7 @@
 
 #include <linux/hyplet.h>
 #include <linux/hyplet_user.h>
-#include <linux/tp_mmu.h>
+#include "hyp_mmu.h"
 
 extern pgd_t *hyp_pgd;
 

@@ -2,9 +2,7 @@
 #include <linux/highmem.h>
 #include <linux/hyplet.h>
 #include <linux/delay.h>
-#include <linux/tp_mmu.h>
-
-#include <linux/tp_mmu.h>
+#include "hyp_mmu.h"
 //
 // alloc 512 * 4096  = 2MB
 //

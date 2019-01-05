@@ -132,4 +132,16 @@ static inline bool __tp_cpu_uses_extended_idmap(void)
 #define tp_pud_huge(_x)	pud_huge(_x)
 
 #endif
+
+#ifndef __ASSEMBLY__
+
+void hyp_user_unmap(unsigned long umem,int size,int user);
+int create_hyp_user_mappings(void *,void*,pgprot_t prot);
+int __create_hyp_mappings(pgd_t *pgdp,
+				 unsigned long start, unsigned long end,
+				 unsigned long pfn, pgprot_t prot);
+
+#define USER_TO_HYP(uva)	(uva)
+#endif
+
 #endif

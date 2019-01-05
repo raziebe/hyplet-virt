@@ -12,7 +12,7 @@
 
 #include <linux/hyplet.h>
 #include <linux/hyplet_user.h>
-#include <linux/tp_mmu.h>
+#include "hyp_mmu.h"
 
 DEFINE_PER_CPU(struct hyplet_vm, HYPLETS);
 
