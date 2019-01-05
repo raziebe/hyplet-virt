@@ -161,6 +161,10 @@ int main(void)
   DEFINE(HYPLET_STACK , offsetof(struct hyplet_vm,  hyplet_stack));
   DEFINE(HYPLET_CODE , offsetof(struct hyplet_vm,  user_hyplet_code ));
 
+  DEFINE(HYPLET_HCR_EL2, offsetof(struct hyplet_vm, hcr_el2));
+  DEFINE(HYPLET_VTCR_EL2, offsetof(struct hyplet_vm, vtcr_el2));
+  DEFINE(HYPLET_VTTBR_EL2, offsetof(struct hyplet_vm, vttbr_el2));
+
   DEFINE(HYPLET_ELR_EL2, offsetof(struct hyplet_vm, elr_el2));
   DEFINE(HYPLET_SP_EL0, offsetof(struct hyplet_vm, sp_el0));
   DEFINE(HYPLET_ARG1, offsetof(struct hyplet_vm, user_arg1));

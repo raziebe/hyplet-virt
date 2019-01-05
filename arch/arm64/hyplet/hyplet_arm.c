@@ -35,11 +35,10 @@
 #include <asm/sections.h>
 
 #include <linux/hyplet.h>
-#include <linux/truly.h>
 #include "hyp_mmu.h"
 
 
-static DEFINE_PER_CPU(unsigned long, tp_arm_hyp_stack_page);
+static DEFINE_PER_CPU(unsigned long, hyp_stack_page);
 
 static inline void __cpu_init_hyp_mode(phys_addr_t boot_pgd_ptr,
                                        phys_addr_t pgd_ptr,
@@ -54,8 +53,10 @@ unsigned long get_hyp_vector(void)
 	return (unsigned long)__hyplet_vectors;
 }
 
+
 static void cpu_init_hyp_mode(void *discard)
 {
+	struct hyplet_vm *hyp;
 	phys_addr_t pgd_ptr;
 	phys_addr_t boot_pgd_ptr;
 	unsigned long hyp_stack_ptr;
@@ -66,19 +67,17 @@ static void cpu_init_hyp_mode(void *discard)
 	__hyp_set_vectors(tp_get_idmap_vector());
 
 	pgd_ptr = tp_mmu_get_httbr();
-	stack_page = __this_cpu_read(tp_arm_hyp_stack_page);
+	stack_page = __this_cpu_read(hyp_stack_page);
 	boot_pgd_ptr = tp_mmu_get_boot_httbr();
 	hyp_stack_ptr = stack_page + PAGE_SIZE;
 	vector_ptr = get_hyp_vector();
-	printk("assign hyplet vector %lx\n",hyp_stack_ptr);
+	/*
+	 * Switch to the hyplet vector
+	 */
 	__cpu_init_hyp_mode(boot_pgd_ptr, pgd_ptr, hyp_stack_ptr, vector_ptr);
-	hyplet_setup();
-}
-
-static int init_subsystems(void)
-{
-	on_each_cpu(cpu_init_hyp_mode, NULL,1);
-	return 0;
+	hyp = hyplet_get_vm();
+	hyplet_info("vttbr_el2=%lx\n",hyp->vttbr_el2);
+	hyplet_call_hyp(hyplet_on, hyp);
 }
 
 /**
@@ -88,6 +87,9 @@ static int init_hyp_mode(void)
 {
 	int cpu;
 	int err = 0;
+
+
+	hyplet_info("Initializing...\n");
 	/*
 	 * Allocate Hyp PGD and setup Hyp identity mapping
 	 */
@@ -108,7 +110,7 @@ static int init_hyp_mode(void)
 			goto out_err;
 		}
 
-		per_cpu(tp_arm_hyp_stack_page, cpu) = stack_page;
+		per_cpu(hyp_stack_page, cpu) = stack_page;
 	}
 	/*
 	 * Map the Hyp-code called directly from the host
@@ -136,11 +138,25 @@ static int init_hyp_mode(void)
 	 * Map the Hyp stack pages
 	 */
 	for_each_possible_cpu(cpu) {
-		char *stack_page = (char *)per_cpu(tp_arm_hyp_stack_page, cpu);
+		char *stack_page;
+		struct hyplet_vm *hyp;
+
+		stack_page = (char *)per_cpu(hyp_stack_page, cpu);
 		err = create_hyp_mappings(stack_page, stack_page + PAGE_SIZE, PAGE_HYP);
 		if (err) {
 			printk("Cannot map hyp stack\n");
 			goto out_err;
+		}
+		/*
+		 * Map EL2/EL1 shared data
+		 * */
+		hyp = hyplet_get(cpu);
+		err = create_hyp_mappings(hyp, hyp + 1, PAGE_HYP);
+		if (err) {
+			hyplet_err("Failed to map hyplet state");
+			goto out_err;
+		} else {
+			hyplet_info("Mapped hyplet state");
 		}
 	}
 
@@ -210,6 +226,7 @@ static void check_target_cpu(void *ret)
  */
 static int hyplet_arch_init(void)
 {
+	struct hyplet_vm *hyp, *this_hyp;
 	int err;
 	int ret, cpu;
 
@@ -226,28 +243,37 @@ static int hyplet_arch_init(void)
 		}
 	}
 
-	printk("HYP mode is available rc-23\n");
+	printk("HYP mode is available rc-24\n");
 	err = init_hyp_mode();
 	if (err)
 		return -1;
+
+	this_hyp = hyplet_get_vm();
+	INIT_LIST_HEAD(&this_hyp->hyp_addr_lst);
+	INIT_LIST_HEAD(&this_hyp->callbacks_lst);
+	spin_lock_init(&this_hyp->lst_lock);
+	this_hyp->state = HYPLET_OFFLINE_ON;
+	this_hyp->hcr_el2 =  HCR_RW | HCR_VM;
+	/* initialize VM if needed */
 	hyplet_init_ipa();
-	err = hyplet_init();
-	if (err)
-		return err;
+	for_each_possible_cpu(cpu) {
 
-	err = init_subsystems();
-	if (err)
-		return -1;
+		if (raw_smp_processor_id() == cpu)
+			continue;
 
+		hyp = hyplet_get(cpu);
+		INIT_LIST_HEAD(&hyp->hyp_addr_lst);
+		INIT_LIST_HEAD(&hyp->callbacks_lst);
+		spin_lock_init(&hyp->lst_lock);
+		hyp->state = this_hyp->state;
+		hyp->hcr_el2 =  this_hyp->hcr_el2;
+		hyp->vtcr_el2 = this_hyp->vtcr_el2;
+		hyp->vttbr_el2 = this_hyp->vttbr_el2;
+
+	}
+
+	on_each_cpu(cpu_init_hyp_mode, NULL,1);
 	return 0;
 }
 
-
-static int hyplet_boot_start(void)
-{
-	int rc = 0;
-	rc = hyplet_arch_init();
-	return rc;
-}
-
-module_init(hyplet_boot_start);
+module_init(hyplet_arch_init);

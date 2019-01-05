@@ -388,12 +388,19 @@ ENTRY(hyplet_on)
 	kern_hyp_va  x0	// grab tvm
 	msr	tpidr_el2, x0	// save tvm context
 
-// enable MMU
-	mov		x0, #1
-	lsl     x0, x0, #HCR_RW_SHIFT
-	msr		hcr_el2, x0
 
 	msr 	mdcr_el2, xzr
+    msr 	hstr_el2, xzr
+
+    ldr     x1, [x0, #HYPLET_VTCR_EL2]
+    msr     vtcr_el2, x1
+
+	ldr     x1, [x0, #HYPLET_VTTBR_EL2]
+    msr 	vttbr_el2, x1
+
+// enable MMU
+    ldr     x1, [x0, #HYPLET_HCR_EL2]
+	msr		hcr_el2, x1
 
 	pop 	x2,x3
 	pop 	x0,x1

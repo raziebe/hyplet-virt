@@ -119,6 +119,7 @@ struct hyplet_vm {
 	unsigned long faulty_esr_el2 __attribute__ ((packed));
 	unsigned long vtcr_el2;
 	unsigned long vttbr_el2;
+	unsigned long hcr_el2;
 } __attribute__ ((aligned (8)));
 
 struct hyp_wait{
@@ -167,6 +168,7 @@ void		hyplet_invld_all_tlb(void);
 void 		hyplet_init_ipa(void);
 struct hyplet_vm* hyplet_get_vm(void);
 unsigned 	long hyplet_get_tcr_el1(void);
+void 			make_vtcr_el2(struct hyplet_vm *tvm);
 unsigned long __hyp_text get_hyplet_addr(int hyplet_id,struct hyplet_vm * hyp);
 
 

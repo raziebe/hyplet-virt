@@ -134,7 +134,6 @@ void hyplet_init_ipa(void)
 	int starting_level = 1;
 	struct hyplet_vm *tvm = hyplet_get_vm();;
 
-
 /*
  tosz = 25 --> 39bits 64GB
 	0-11
@@ -157,6 +156,8 @@ void hyplet_init_ipa(void)
 		tvm->vttbr_el2 = page_to_phys(pg_lvl_zero) | (vmid << 48);
 	else
 		tvm->vttbr_el2 = page_to_phys((struct page *) tvm->pg_lvl_one) | (vmid << 48);
+
+	make_vtcr_el2(tvm);
 }
 
 

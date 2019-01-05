@@ -23,47 +23,8 @@ struct hyplet_vm* hyplet_get(int cpu){
 struct hyplet_vm* hyplet_get_vm(void){
 	return this_cpu_ptr(&HYPLETS);
 }
-/*
- * construct page table
-*/
-int hyplet_init(void)
-{
-	struct hyplet_vm *tv;
-	int cpu = 0;
 
-	tv = hyplet_get_vm();
 
-	for_each_possible_cpu(cpu) {
-		struct hyplet_vm *hyp = &per_cpu(HYPLETS, cpu);
-		if (tv != hyp) {
-			memcpy(hyp, tv, sizeof(*tv));
-		}
-		INIT_LIST_HEAD(&hyp->hyp_addr_lst);
-		INIT_LIST_HEAD(&hyp->callbacks_lst);
-		spin_lock_init(&hyp->lst_lock);
-
-		hyp->state = HYPLET_OFFLINE_ON;
-		hyplet_info("cpu %d HYP vttbr_el2=%lx\n", cpu, hyp->vttbr_el2);
-	}
-	return 0;
-}
-
-/*
- * Map EL2/EL1 shared data
- * */
-void hyplet_map_kern(void)
-{
-	int err;
-	struct hyplet_vm *hyp = hyplet_get_vm();
-
-	err = create_hyp_mappings(hyp, hyp + 1, PAGE_HYP);
-	if (err) {
-		hyplet_err("Failed to map hyplet state");
-		return;
-	} else {
-		hyplet_info("Mapped hyplet state");
-	}
-}
 
 int __hyp_text is_hyp(void)
 {
@@ -72,21 +33,7 @@ int __hyp_text is_hyp(void)
         return el == CurrentEL_EL2;
 }
 
-void hyplet_setup(void)
-{
-	struct hyplet_vm *hyp = hyplet_get_vm();
-	unsigned long vbar_el2 = (unsigned long)KERN_TO_HYP(__hyplet_vectors);
-	unsigned long vbar_el2_current;
 
-	hyplet_map_kern();
-
-	vbar_el2_current = hyplet_get_vectors();
-	if (vbar_el2 != vbar_el2_current) {
-		hyplet_info("vbar_el2 should restore\n");
-		hyplet_set_vectors(vbar_el2);
-	}
-	hyplet_call_hyp(hyplet_on, hyp);
-}
 
 int is_isr_hyplet_on(void)
 {
