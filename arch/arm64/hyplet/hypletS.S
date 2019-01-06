@@ -398,7 +398,6 @@ ENTRY(hyplet_on)
 	ldr     x1, [x0, #HYPLET_VTTBR_EL2]
     msr 	vttbr_el2, x1
 
-// enable MMU
     ldr     x1, [x0, #HYPLET_HCR_EL2]
 	msr		hcr_el2, x1
 
