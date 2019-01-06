@@ -85,7 +85,10 @@ int hyp_print(const char *format, ...);
 int hyp_print2(struct hyp_fmt *format);
 void print_hyp(void);
 int hyp_wait(int cpu,int ms);
-
+int hyplet_set_print(void *addr, int cpu);
+int hyplet_map_vma(void *addr,int cpu);
+int get_section_addr(char *secname,long *addr, int *size);
+int Elf_parser_load_memory_map(char *prog);
 
 #endif
 

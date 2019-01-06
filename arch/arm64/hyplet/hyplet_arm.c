@@ -36,7 +36,7 @@
 
 #include <linux/hyplet.h>
 #include "hyp_mmu.h"
-
+#include "hypletS.h"
 
 static DEFINE_PER_CPU(unsigned long, hyp_stack_page);
 

@@ -142,6 +142,19 @@ __hyp_panic_str:
 	.ascii	"hyplet panic:\nCode:%08x PC:%016x ESR:%08x\nFAR:%016x" \
 	" HPFAR:%016x RAZDBG:%p\nTrulyCxt:%p\n\0"
 
+ENTRY(hyplet_flush_el2_dcache)
+	dc      civac, x0     // clean & invalidate D line / unified line
+   	dsb     ish
+	ret
+ENDPROC(hyplet_flush_el2_dcache)
+
+ENTRY(hyplet_flush_el2_icache)
+    ic      ivau, x0
+   	dsb     ish
+	ret
+ENDPROC(hyplet_flush_el2_icache)
+
+
 ENTRY(hyplet_get_tcr_el1)
 	mrs     x0, tcr_el1
 	ret
@@ -282,18 +295,18 @@ ENDPROC(hyplet_call_hyp)
 /*
  * turn on brk trap
 */
-ENTRY(hyplet_trap_on)
+ENTRY(hyplet_mdcr_on)
 	mov	x0, #0x100
 	msr mdcr_el2,x0
 	ret
-ENDPROC(hyplet_trap_on)
+ENDPROC(hyplet_mdcr_on)
 /*
  * turn off brk trap
 */
-ENTRY(hyplet_trap_off)
+ENTRY(hyplet_mdcr_off)
 	msr mdcr_el2,xzr
 	ret
-ENDPROC(hyplet_trap_off)
+ENDPROC(hyplet_mdcr_off)
 
 /*
  *	Executing ISR hyplet
@@ -411,7 +424,7 @@ ENDPROC(hyplet_on)
 
 .align 11
 ENTRY(__hyplet_vectors)
-	ventry		hyplet_abort_isr
+		ventry		hyplet_abort_isr
         invalid_vector  EL2_irq_invalid,#2                 // IRQ EL2t
         invalid_vector  EL2_fiq_invalid,#3                // FIQ EL2t
         invalid_vector  EL2_error_invalid,#4             // Error EL2t

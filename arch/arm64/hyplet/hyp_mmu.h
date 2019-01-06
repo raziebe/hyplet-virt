@@ -126,6 +126,8 @@ static inline void hyp_flush_dcache_pud(pud_t pud)
 
 #ifndef __ASSEMBLY__
 
+int hyplet_map_all(struct hyplet_vm *);
+void hyplet_flush_caches(struct hyplet_vm *);
 void hyp_user_unmap(unsigned long umem,int size,int user);
 int create_hyp_user_mappings(void *,void*,pgprot_t prot);
 int __create_hyp_mappings(pgd_t *pgdp,
