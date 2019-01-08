@@ -72,8 +72,9 @@ static int hyplet_start(int argc, char *argv[])
 		fprintf(stderr, "hyplet: Failed to allocate a stack\n");
 		return -1;
 	}
-
+//
 // must fault it
+//
 	memset(stack_addr, 0x00, stack_size);
 
 	if (hyplet_map(record_opcode, 1, cpu)) {
@@ -92,16 +93,17 @@ static int hyplet_start(int argc, char *argv[])
 		return -1;
 	}
 
-        if (hyplet_set_callback(cpu, record_opcode)) {
+        if (hyplet_set_rpc(record_opcode, cpu)) {
              fprintf(stderr, "hyplet: Failed to assign opcode\n");
              return -1;
         }
 
-	if (hyplet_set_print(user_log ,cpu)){
-		fprintf(stderr, "hyplet: Failed to set print\n");
-		return -1;
-	}
+        if (hyplet_mdcr_on(cpu)){
+                fprintf(stderr, "hyplet: set trap failed\n");
+                return -1;
+        }
 
+	fprintf(stderr, "hyplet: set mdcr on XXXXXXX\n");
 	return 0;
 }
 
@@ -117,4 +119,7 @@ int main(int argc, char *argv[])
     if (hyplet_start(argc, argv)) {
 	return -1;
     }
+    printf("\nHyplet set. Prepare to run trap\n");
+    asm volatile("brk #5\n" : );
+    sleep(1);
 }

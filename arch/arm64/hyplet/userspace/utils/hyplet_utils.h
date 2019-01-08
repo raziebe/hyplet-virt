@@ -89,6 +89,8 @@ int hyplet_set_print(void *addr, int cpu);
 int hyplet_map_vma(void *addr,int cpu);
 int get_section_addr(char *secname,long *addr, int *size);
 int Elf_parser_load_memory_map(char *prog);
+int hyplet_mdcr_on(int cpu);
+int hyplet_mdcr_off(int cpu);
 
 #endif
 

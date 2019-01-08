@@ -108,7 +108,7 @@ void __close_hyplet(void *task, struct hyplet_vm *hyp)
 
 	if (!(hyp->state & HYPLET_OFFLINE_ON))
 		hyplet_call_hyp(hyplet_mdcr_off);
-
+	hyplet_call_hyp(hyplet_mdcr_off);
 	hyp->tsk = NULL;
 	smp_mb();
 	while (hyp->state & HYPLET_OFFLINE_RUN) {
@@ -353,10 +353,12 @@ int hyplet_ctl(unsigned long arg)
 				break;
 		case HYPLET_MDCR_ON:
 				hyplet_call_hyp(hyplet_mdcr_on);
+				rc = 0;
 				break;
 
 		case HYPLET_MDCR_OFF:
 				hyplet_call_hyp(hyplet_mdcr_off);
+				rc = 0;
 				break;
 	}
 	return rc;

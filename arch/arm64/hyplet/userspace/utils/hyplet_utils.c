@@ -40,6 +40,21 @@ int __hyplet_map(int cmd, void* addr,int size,int cpu)
 	return 0;
 }
 
+int hyplet_mdcr_on(int cpu)
+{
+	struct hyplet_ctrl hplt = {0};
+
+	hplt.cpu = cpu;
+	return  hyplet_ctl(HYPLET_MDCR_ON, &hplt);
+}
+
+int hyplet_mdcr_off(int cpu)
+{
+	struct hyplet_ctrl hplt;
+
+	hplt.cpu = cpu;
+	return  hyplet_ctl(HYPLET_MDCR_OFF, &hplt);
+}
 
 int hyplet_set_callback(void *addr,int cpu)
 {
