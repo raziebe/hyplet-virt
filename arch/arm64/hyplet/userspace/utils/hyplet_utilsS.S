@@ -56,3 +56,8 @@ hyp_print2:
    pop x0, x1
 
    ret
+
+.global hyplet_rpc_call
+hyplet_rpc_call:
+    brk  #4
+    ret
