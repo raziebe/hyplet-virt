@@ -308,7 +308,8 @@ int hyplet_ctl(unsigned long arg)
 
 		case HYPLET_MAP_STACK: // If the user won't map the stack we use the current sp_el0
 				rc = hyplet_check_mapped(hyp, &hplt.addr);
-				if ( rc < 0){
+				if ( rc == 0){
+					hyplet_info("stack 0x%lx failed, not mapped\n",hplt.addr.addr);
 					return -EINVAL;
 				}
 				hyp->hyplet_stack =
