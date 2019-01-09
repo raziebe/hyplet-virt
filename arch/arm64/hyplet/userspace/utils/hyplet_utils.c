@@ -191,6 +191,8 @@ int hyplet_untrap_irq(int irq,int cpu)
 
 int hyplet_set_stack(void* addr,int size,int cpu)
 {
+	// map the stack just in case
+	__hyplet_map(HYPLET_MAP, addr, size, cpu);
 	return __hyplet_map(HYPLET_MAP_STACK, addr, size, cpu);
 }
 
