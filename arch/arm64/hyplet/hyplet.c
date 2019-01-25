@@ -179,6 +179,37 @@ static void offlet_wake(struct hyplet_vm *hyp,struct hyp_wait* hypevent)
 	wake_up_interruptible(&hypevent->wait_queue);
 }
 
+/*
+ * called from a kernel driver context
+*/
+void offlet_register(struct hyp_wait* hypeve,int cpu)
+{
+	unsigned long flags;
+	struct hyplet_vm *hyp;
+
+	hyp = hyplet_get(cpu);
+	spin_lock_irqsave(&hyp->lst_lock, flags);
+	list_add(&hypeve->next, &hyp->callbacks_lst);
+	spin_unlock_irqrestore(&hyp->lst_lock, flags);
+}
+EXPORT_SYMBOL_GPL(offlet_register);
+
+/*
+ * called from a kernel driver context
+*/
+void offlet_unregister(struct hyp_wait* hypeve,int cpu)
+{
+	unsigned long flags;
+	struct hyplet_vm *hyp;
+
+	hyp = hyplet_get(cpu);
+	
+	spin_lock_irqsave(&hyp->lst_lock, flags);
+	list_del(&hypeve->next);
+	spin_unlock_irqrestore(&hyp->lst_lock, flags);
+}
+EXPORT_SYMBOL_GPL(offlet_unregister);
+
 static void wait_for_hyplet(struct hyplet_vm *hyp,int ms)
 {
 	unsigned long flags;

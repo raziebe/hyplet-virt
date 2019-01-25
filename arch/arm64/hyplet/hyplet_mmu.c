@@ -1,5 +1,3 @@
-
-
 #include <linux/module.h>
 #include <linux/linkage.h>
 #include <linux/init.h>
