@@ -5,6 +5,63 @@
 #include "hyp_mmu.h"
 #include "hypletS.h"
 
+#define S2_PAGE_ACCESS_NONE	0b00
+#define S2_PAGE_ACCESS_R	0b01
+#define S2_PAGE_ACCESS_W	0b10
+#define S2_PAGE_ACCESS_RW	0b11
+
+#if defined(__HYPLET_SHOW_VM__)
+static int hyplet_show_vm = 1;
+#else
+static int hyplet_show_vm = 0;
+#endif
+
+#if defined(RASPBERRY_PI3)
+	#define EL2_FAULT_ADDRESS  0x3f980000LL
+#else
+#define EL2_FAULT_ADDRESS 0x1a000000LL
+#endif
+
+static long el2_fault_address(void)
+{
+	return EL2_FAULT_ADDRESS;
+}
+
+/*
+ * Called in EL2 to handle a faulted address
+ */
+int __hyp_text hyplet_handle_abrt(struct hyplet_vm *vm, unsigned long addr)
+{
+	if (!( addr >= el2_fault_address() &&
+				addr <= (el2_fault_address() + PAGE_SIZE) ) ){
+
+			return 0;
+	}
+
+	/*
+	 * An access to the virtual device detected.
+	 * record the user and count
+	 */
+	 vm->dev_access.last_current = (unsigned long)current;
+	 vm->dev_access.count++;
+	 return 1;
+}
+
+static long make_special_page_desc(unsigned long real_phyaddr)
+{
+	unsigned long addr = real_phyaddr;
+	/*
+	 * To conceal a device, we put z zero page.
+	 * return (long) page_to_phys(ZERO_PAGE(0))
+	* In cases where we want to monitor access to a device.
+	* we return the same address but change the access permissions
+	*/
+
+	return (DESC_AF) | (0b11 << DESC_SHREABILITY_SHIFT) |
+	                ( S2_PAGE_ACCESS_R  << DESC_S2AP_SHIFT) | (0b1111 << 2) |
+	                  DESC_TABLE_BIT | DESC_VALID_BIT | addr;
+}
+
 //
 // alloc 512 * 4096  = 2MB
 //
@@ -21,32 +78,19 @@ void create_level_three(struct page *pg, long *addr)
 
 	for (i = 0; i < PAGE_SIZE / sizeof(long long); i++) {
 		/*
-		 * see page 1781 for details
+		 * Memory attribute fields in the VMSAv8-64 translation table format descriptors
 		 */
 		l3_descriptor[i] = (DESC_AF) |
 			(0b11 << DESC_SHREABILITY_SHIFT) |
-			(0b11 << DESC_S2AP_SHIFT) | (0b1111 << 2) |	/* leave stage 1 unchanged see 1795 */
+			/* The S2AP data access permissions, Non-secure EL1&0 translation regime  */
+			(S2_PAGE_ACCESS_RW << DESC_S2AP_SHIFT) | (0b1111 << 2) |
 		   	 DESC_TABLE_BIT | DESC_VALID_BIT | (*addr);
-#if defined(__SHOW_VM__)
-/*
-  We put the zero page instead of eth0 address. When the system boots
-  then eth0 will fail to run. This proves that VM exists.
-*/
-		{
-		long eth0_addr = 0x000000003f980000LL;
-                if ( (*addr) == eth0_addr) {
-                        long z = (long) page_to_phys(ZERO_PAGE(0));
 
-                        hyp_info("Crashing addr = %lx zpg=%lx\n",
-                                        *addr
-                                        ,z )  ;
+		if (hyplet_show_vm)	{
+             if ( (*addr) == el2_fault_address())
+            	 l3_descriptor[i] = make_special_page_desc((*addr));
 
-                        l3_descriptor[i] = (DESC_AF) | (0b11 << DESC_SHREABILITY_SHIFT) |
-                                (0b11 << DESC_S2AP_SHIFT) | (0b1111 << 2) |
-                                 DESC_TABLE_BIT | DESC_VALID_BIT | (long)z;
-                    }
 		}
-#endif
 		(*addr) += PAGE_SIZE;
 	}
 	kunmap(pg);
