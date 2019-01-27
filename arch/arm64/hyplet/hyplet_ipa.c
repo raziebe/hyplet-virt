@@ -4,63 +4,7 @@
 #include <linux/delay.h>
 #include "hyp_mmu.h"
 #include "hypletS.h"
-
-#define S2_PAGE_ACCESS_NONE	0b00
-#define S2_PAGE_ACCESS_R	0b01
-#define S2_PAGE_ACCESS_W	0b10
-#define S2_PAGE_ACCESS_RW	0b11
-
-#if defined(__HYPLET_SHOW_VM__)
-static int hyplet_show_vm = 1;
-#else
-static int hyplet_show_vm = 0;
-#endif
-
-#if defined(RASPBERRY_PI3)
-	#define EL2_FAULT_ADDRESS  0x3f980000LL
-#else
-#define EL2_FAULT_ADDRESS 0x1a000000LL
-#endif
-
-static long el2_fault_address(void)
-{
-	return EL2_FAULT_ADDRESS;
-}
-
-/*
- * Called in EL2 to handle a faulted address
- */
-int __hyp_text hyplet_handle_abrt(struct hyplet_vm *vm, unsigned long addr)
-{
-	if (!( addr >= el2_fault_address() &&
-				addr <= (el2_fault_address() + PAGE_SIZE) ) ){
-
-			return 0;
-	}
-
-	/*
-	 * An access to the virtual device detected.
-	 * record the user and count
-	 */
-	 vm->dev_access.last_current = (unsigned long)current;
-	 vm->dev_access.count++;
-	 return 1;
-}
-
-static long make_special_page_desc(unsigned long real_phyaddr)
-{
-	unsigned long addr = real_phyaddr;
-	/*
-	 * To conceal a device, we put z zero page.
-	 * return (long) page_to_phys(ZERO_PAGE(0))
-	* In cases where we want to monitor access to a device.
-	* we return the same address but change the access permissions
-	*/
-
-	return (DESC_AF) | (0b11 << DESC_SHREABILITY_SHIFT) |
-	                ( S2_PAGE_ACCESS_R  << DESC_S2AP_SHIFT) | (0b1111 << 2) |
-	                  DESC_TABLE_BIT | DESC_VALID_BIT | addr;
-}
+#include "malware_trap.h"
 
 //
 // alloc 512 * 4096  = 2MB
@@ -81,17 +25,13 @@ void create_level_three(struct page *pg, long *addr)
 		 * Memory attribute fields in the VMSAv8-64 translation table format descriptors
 		 */
 		l3_descriptor[i] = (DESC_AF) |
-			(0b11 << DESC_SHREABILITY_SHIFT) |
-			/* The S2AP data access permissions, Non-secure EL1&0 translation regime  */
-			(S2_PAGE_ACCESS_RW << DESC_S2AP_SHIFT) | (0b1111 << 2) |
-		   	 DESC_TABLE_BIT | DESC_VALID_BIT | (*addr);
+				(0b11 << DESC_SHREABILITY_SHIFT) |
+				/* The S2AP data access permissions, Non-secure EL1&0 translation regime  */
+				(S2_PAGE_ACCESS_RW << DESC_S2AP_SHIFT) | (0b1111 << 2) |
+				DESC_TABLE_BIT | DESC_VALID_BIT | (*addr);
 
-		if (hyplet_show_vm)	{
-             if ( (*addr) == el2_fault_address())
-            	 l3_descriptor[i] = make_special_page_desc((*addr));
-
-		}
-		(*addr) += PAGE_SIZE;
+         stash_descriptor((*addr), l3_descriptor, i);
+		 (*addr) += PAGE_SIZE;
 	}
 	kunmap(pg);
 }
@@ -213,6 +153,7 @@ void hyplet_init_ipa(void)
 	else
 		vm->vttbr_el2 = page_to_phys((struct page *) vm->pg_lvl_one) | (vmid << 48);
 
+	malware_init_procfs();
 	make_vtcr_el2(vm);
 }
 
