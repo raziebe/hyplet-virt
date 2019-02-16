@@ -22,23 +22,30 @@ void prepare_special_addresses(struct hyplet_vm *vm)
 	 * Now prepare the real actions
 	 */
 	hyphnd = &vm->dev_access->hyphnd[0];
-	hyphnd->offset = 0x10;
-	hyphnd->action = dwc3_mmio_abrt_action10;
+	hyphnd->offset = 0xb00;
+	hyphnd->action = (__action__mmio__)KERN_TO_HYP(dwc3_mmio_abrt_action10);
 }
 
 
 void malware_prep_mmio(char *addr)
 {
-	memset(addr, 0xeeeeffff, PAGE_SIZE);
+	/* A marker */
+	memset(addr, 0xeeeeeeee, PAGE_SIZE);
 	mb();
 }
 
+/*
+ * An example for how the user can access an modify
+ * MMIO mapped page.
+ */
 void __hyp_text dwc3_mmio_abrt_action10(struct hyplet_vm *vm, struct hyplet_driver_handler *hyphnd)
 {
+	struct virt_dev_access* virtdev = (struct virt_dev_access*)KERN_TO_HYP(vm->dev_access);
+	unsigned long el2_mmio_addr = KERN_TO_HYP(virtdev->faddr.fake_vaddr);
 	unsigned long *p;
-	unsigned long el2_mmio_addr = el2_fault_address() | HYP_PAGE_OFFSET_LOW_MASK;
 
 	p = (unsigned long *)(el2_mmio_addr + hyphnd->offset);
+
 	if ( (*p & 0x1) )
 		(	*p) &= ~(0x1);
 		else
