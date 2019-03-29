@@ -72,6 +72,8 @@ EL1_sync:
 	mrs	x1, esr_el2
 	lsr	x2, x1, #ESR_ELx_EC_SHIFT	// Syndrom register shift by 26 bits
 
+	cmp x2, #ESR_ELx_EC_BKPT32
+	b.eq 4f
 	cmp x2, #ESR_ELx_EC_BRK64	// user space performed watchpoint
 	b.eq 4f
 	cmp	x2, #ESR_ELx_EC_HVC64	// If not 10110 then we have a trap
