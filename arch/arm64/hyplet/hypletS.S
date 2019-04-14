@@ -216,53 +216,33 @@ ENTRY(hyplet_clear_cache)
         ret
 ENDPROC(hyplet_clear_cache)
 
-// Called by a brk trap
 
-// x1..4  - arg 1 .. arg4
-// x0 = hyplet_id
+/*
+ * Called by a brk trap
+ * x0..x3  - arg 1 .. arg4
+*/
 ENTRY(hyplet_rpc)
 
 	push_registers
 
 	mrs	x5, tpidr_el2
-
-	str	x1,[x5, #HYPLET_ARG1]
-	str	x2,[x5, #HYPLET_ARG2]
-	str	x3,[x5, #HYPLET_ARG3]
-	str	x4,[x5, #HYPLET_ARG4]
-
+//
 // save current stack
-	mrs x2, sp_el0
-	str	x2,[x5, #HYPLET_SP_EL0]
-// check func id
-	mrs	x1, tpidr_el2
-	bl get_hyplet_addr // get_hyplet_addr(func id, hyp )
-	cmp	x0, xzr
-	bne 2f
-	mov	x0, #(-1)
-	msr	cntvoff_el2,x0
-	b 3f
-/*
-* Local hyplet found . prepare el0 stack ,code and arguments
-*/
-2:
-	mrs	x4, tpidr_el2
-	ldr	x2, [x4, #HYPLET_STACK]
-	msr	sp_el0,x2
+//
+	mrs x6, sp_el0
+	str	x6, [x5, #HYPLET_SP_EL0]
 
-	mrs x1, spsel
-	and w1,w1,#0xFFFFFFFE
-	msr spsel,x1
+	ldr	x6, [x5, #HYPLET_STACK]
+	msr	sp_el0, x6
 
+	mrs x6, spsel
+	and w6, w6, #0xFFFFFFFE
+	msr spsel, x6
+//
 // prepare to call rpc
-	ldr	x30,[ x4, #HYPLET_CODE]
-	ldr	x0, [ x4, #HYPLET_ARG1]
-	ldr	x1, [ x4, #HYPLET_ARG2]
-	ldr	x2, [ x4, #HYPLET_ARG3]
-	ldr	x3, [ x4, #HYPLET_ARG4]
-
+	ldr	x30,[x5, #HYPLET_CODE]
 	blr x30
-
+//
 // save return value
 	msr	cntvoff_el2,x0
 //

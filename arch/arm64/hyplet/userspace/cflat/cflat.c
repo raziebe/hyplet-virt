@@ -111,10 +111,10 @@ static int hyplet_start(int argc, char *argv[])
 		return -1;
 	}
 
-    if (hyplet_rpc_set(record_opcode, func_id, cpu)) {
-         fprintf(stderr, "hyplet: Failed to assign opcode\n");
-         return -1;
-    }
+	if (hyplet_rpc_set(record_opcode, func_id, cpu)) {
+		fprintf(stderr, "hyplet: Failed to assign opcode\n");
+		return -1;
+	}
 
 	fprintf(stderr, "hyplet: set mdcr on XXXXXXX\n");
 	return 0;
@@ -134,6 +134,12 @@ int main(int argc, char *argv[])
     }
 
     printf("\nHyplet set. Prepare to run trap\n");
-    hyplet_rpc_call(func_id, 3, 4, 5);
-    printf("Got %lx,%lx,%lx\n", instr[0][0],   instr[0][1],  instr[0][2] );
+    while(cnt == 0){
+	sleep(1);
+    }
+
+    for (i = 0; i < cnt ; i++)
+   	 printf("DATA %d) %lx,%lx,%lx\n",cnt, 
+			instr[i][0],   instr[i][1],  instr[i][2] );
+    sleep(1);
 }
