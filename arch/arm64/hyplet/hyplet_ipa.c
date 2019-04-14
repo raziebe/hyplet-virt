@@ -220,7 +220,7 @@ void walk_on_ipa(struct hyplet_vm *vm)
 					struct page *desc2_page;
 
 					temp = desc1[i] & 0x000FFFFFFFFFFC00LL;
-					printk("L1: [%d] %lx  %lx\n",j, desc1[j], temp);
+
 
 					desc2_page = phys_to_page(temp);
 					desc2 = kmap(desc2_page);
@@ -231,22 +231,24 @@ void walk_on_ipa(struct hyplet_vm *vm)
 							unsigned long *desc3;
 
 							temp = desc2[k] & 0x000FFFFFFFFFFC00LL;
-							printk("L2: [%d] %lx  %lx\n",k, desc2[k], temp);
+
 							desc3_page = phys_to_page(temp);
 
 							desc3 = kmap(desc3_page);
 							for (n = 0 ; n < PAGE_SIZE/sizeof(long); n++){
 								if (desc3[k]){
 									temp = desc3[k] & 0x000FFFFFFFFFFC00LL;
-									printk("L3: [%d] %lx  %lx\n",k, desc3[n], temp);
 								}
 							}
+							printk("L3: [%d] %lx  %lx\n",k, desc3[n], temp);
 							kunmap(desc3_page);
 						}
 					}
+					printk("L2: %lx  %lx\n", desc2[k-1], desc2[0]);
 					kunmap(desc2_page);
 				}
 			}
+			printk("L1: %lx ... %lx\n", desc1[j-1], desc1[0]);
 			kunmap(desc1_page);
 		}
 	}
