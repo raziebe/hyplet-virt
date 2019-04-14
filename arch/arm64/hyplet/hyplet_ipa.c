@@ -198,7 +198,7 @@ void make_mair_el2(struct hyplet_vm *vm)
  	hyplet_call_hyp(set_mair_el2, vm->mair_el2);
 }
 
-void walk_on_ipa(struct hyplet_vm *vm)
+void dump_ipa(struct hyplet_vm *vm)
 {
 	int i,j,k, n;
 	unsigned long *desc0 = kmap(vm->pg_lvl_zero);
@@ -220,7 +220,6 @@ void walk_on_ipa(struct hyplet_vm *vm)
 					struct page *desc2_page;
 
 					temp = desc1[i] & 0x000FFFFFFFFFFC00LL;
-
 
 					desc2_page = phys_to_page(temp);
 					desc2 = kmap(desc2_page);
@@ -254,4 +253,73 @@ void walk_on_ipa(struct hyplet_vm *vm)
 	}
 	kunmap(vm->pg_lvl_zero);
 }
+
+/*
+ * walk on the IPA and map it to the hypervisor
+ */
+void walk_on_ipa(struct hyplet_vm *vm)
+{
+	int i,j,k, n;
+	unsigned long *desc0 = kmap(vm->pg_lvl_zero);
+	unsigned long temp;
+
+	for ( i = 0 ; i < PAGE_SIZE/sizeof(long); i++){
+		if (desc0[i]) {
+			unsigned long *desc1;
+			struct page *desc1_page;
+
+			temp = desc0[i] & 0x000FFFFFFFFFFC00LL;
+			desc1_page = phys_to_page(temp);
+			desc1 = kmap(desc1_page);
+
+
+			create_hyp_mappings(desc1,
+					(unsigned long)desc1 + PAGE_SIZE- 1, PAGE_HYP);
+
+			for (j = 0 ; j < PAGE_SIZE/sizeof(long); j++){
+				if (desc1[j]){
+					unsigned long *desc2;
+					struct page *desc2_page;
+
+					temp = desc1[i] & 0x000FFFFFFFFFFC00LL;
+
+					desc2_page = phys_to_page(temp);
+					desc2 = kmap(desc2_page);
+					create_hyp_mappings(desc2,
+							(unsigned long)desc2 + PAGE_SIZE- 1, PAGE_HYP);
+
+
+					for (k = 0 ; k < PAGE_SIZE/sizeof(long); k++){
+						if (desc2[k]){
+							struct page *desc3_page;
+							unsigned long *desc3;
+
+							temp = desc2[k] & 0x000FFFFFFFFFFC00LL;
+
+							desc3_page = phys_to_page(temp);
+							desc3 = kmap(desc3_page);
+							create_hyp_mappings(desc2,
+									(unsigned long)desc2 + PAGE_SIZE- 1, PAGE_HYP);
+
+
+							for (n = 0 ; n < PAGE_SIZE/sizeof(long); n++){
+								if (desc3[k]){
+									temp = desc3[k] & 0x000FFFFFFFFFFC00LL;
+								}
+							}
+
+							kunmap(desc3_page);
+						}
+					}
+
+					kunmap(desc2_page);
+				}
+			}
+
+			kunmap(desc1_page);
+		}
+	}
+	kunmap(vm->pg_lvl_zero);
+}
+
 
