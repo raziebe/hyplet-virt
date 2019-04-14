@@ -242,8 +242,6 @@ static int hyplet_arch_init(void)
 	this_hyp->state = HYPLET_OFFLINE_ON;
 	this_hyp->hcr_el2 =  HCR_RW;
 #ifdef __HYPLET_VM__
-	this_hyp->dev_access = kmalloc(sizeof(struct virt_dev_access), GFP_KERNEL);
-	memset(this_hyp->dev_access,0x00,sizeof(struct virt_dev_access));
 	this_hyp->hcr_el2 |= HCR_VM;
 #endif
 	/* initialize VM if needed */
@@ -262,7 +260,6 @@ static int hyplet_arch_init(void)
 		hyp->vtcr_el2 = this_hyp->vtcr_el2;
 		hyp->vttbr_el2 = this_hyp->vttbr_el2;
 		hyp->mair_el2 = this_hyp->mair_el2;
-		hyp->dev_access = this_hyp->dev_access;
 	}
 
 	on_each_cpu(cpu_init_hyp_mode, NULL,1);

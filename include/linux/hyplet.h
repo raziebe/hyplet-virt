@@ -107,13 +107,7 @@ struct hyp_addr {
 };
 
 struct hyplet_vm;
-struct hyplet_driver_handler;
-typedef void (*__action__mmio__)(struct hyplet_vm *, struct hyplet_driver_handler*);
 
-struct hyplet_driver_handler {
-	int offset;
-	void (*action)(struct hyplet_vm *, struct hyplet_driver_handler*);
-};
 
 struct stage2_fault_addr {
 	unsigned long real_phys_addr;
@@ -129,7 +123,6 @@ struct virt_dev_access {
 	unsigned long last_current;
 	unsigned long count;
 	struct stage2_fault_addr faddr;
-	struct hyplet_driver_handler hyphnd[FAULT_MAX_HANDLERS];
 };
 
 struct hyplet_vm {
@@ -149,6 +142,7 @@ struct hyplet_vm {
 	struct task_struct *tsk;
  	struct list_head callbacks_lst;
  	spinlock_t lst_lock;
+ 	struct page *pg_lvl_zero;
  	unsigned long pg_lvl_one;
  	struct list_head hyp_addr_lst;
  	unsigned long state __attribute__ ((packed));
@@ -158,7 +152,7 @@ struct hyplet_vm {
 	unsigned long vttbr_el2;
 	unsigned long hcr_el2;
 	unsigned long mair_el2;
-	struct virt_dev_access* dev_access;
+
 } __attribute__ ((aligned (8)));
 
 struct hyp_wait{

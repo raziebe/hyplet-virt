@@ -64,15 +64,6 @@ void hyplet_map_to_el2(struct hyplet_vm *hyp)
 	} else {
 		hyplet_info("Mapped hyplet state");
 	}
-
-	err = create_hyp_mappings(hyp->dev_access, hyp->dev_access + 1, PAGE_HYP);
-	if (err) {
-		hyplet_err("Failed to map hyplet virt device");
-		return;
-	} else {
-		hyplet_info("Mapped hyplet virt device");
-	}
-
 }
 
 int __hyp_text is_hyp(void)
