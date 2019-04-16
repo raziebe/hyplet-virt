@@ -94,13 +94,12 @@ void create_level_one(struct page *pg, long *addr)
 	kunmap(pg);
 }
 
-void create_level_zero(struct hyplet_vm *vm, struct page *pg, long *addr)
+void create_level_zero(struct hyplet_vm *vm, long* desc0, long *addr)
 {
 	struct page *pg_lvl_one;
-	long *l0_desc;
 
 	pg_lvl_one = alloc_page(GFP_KERNEL | __GFP_ZERO);
-	if (pg_lvl_one == NULL) {
+	if (!pg_lvl_one) {
 		printk("%s alloc page NULL\n", __func__);
 		return;
 	}
@@ -108,16 +107,9 @@ void create_level_zero(struct hyplet_vm *vm, struct page *pg, long *addr)
 	get_page(pg_lvl_one);
 	create_level_one(pg_lvl_one, addr);
 
-	l0_desc = (long *) kmap(pg);
-	if (l0_desc == NULL) {
-		printk("%s desc NULL\n", __func__);
-		return;
-	}
-
-	memset(l0_desc, 0x00, PAGE_SIZE);
-	l0_desc[0] = (page_to_phys(pg_lvl_one)) | DESC_TABLE_BIT | DESC_VALID_BIT;
+	memset(desc0, 0x00, PAGE_SIZE);
+	desc0[0] = (page_to_phys(pg_lvl_one)) | DESC_TABLE_BIT | DESC_VALID_BIT;
 	vm->pg_lvl_one = (unsigned long)pg_lvl_one;
-	kunmap(pg);
 
 }
 
@@ -125,6 +117,7 @@ void hyplet_init_ipa(void)
 {
 	long addr = 0;
 	long vmid = 012;
+	struct page *pg_lvl0;
 	int starting_level = 1;
 	struct hyplet_vm *vm = hyplet_get_vm();
 
@@ -137,17 +130,22 @@ void hyplet_init_ipa(void)
  	pa range = 1 --> 36 bits 64GB
 
 */
-	vm->pg_lvl_zero = alloc_page(GFP_KERNEL | __GFP_ZERO);
-	if (vm->pg_lvl_zero == NULL) {
+	pg_lvl0 = alloc_page(GFP_KERNEL | __GFP_ZERO);
+	if (pg_lvl0 == NULL) {
 		printk("%s alloc page NULL\n", __func__);
 		return;
 	}
 
-	get_page(vm->pg_lvl_zero);
-	create_level_zero(vm, vm->pg_lvl_zero, &addr);
+	vm->ipa_desc_zero = (long *) kmap(pg_lvl0);
+	if (vm->ipa_desc_zero == NULL) {
+		printk("%s desc0 failed to map\n", __func__);
+		return;
+	}
+
+	create_level_zero(vm, vm->ipa_desc_zero, &addr);
 
 	if (starting_level == 0)
-		vm->vttbr_el2 = page_to_phys(vm->pg_lvl_zero) | (vmid << 48);
+		vm->vttbr_el2 = page_to_phys(pg_lvl0) | (vmid << 48);
 	else
 		vm->vttbr_el2 = page_to_phys((struct page *) vm->pg_lvl_one) | (vmid << 48);
 
@@ -198,70 +196,24 @@ void make_mair_el2(struct hyplet_vm *vm)
  	hyplet_call_hyp(set_mair_el2, vm->mair_el2);
 }
 
-void dump_ipa(struct hyplet_vm *vm)
-{
-	int i,j,k, n;
-	unsigned long *desc0 = kmap(vm->pg_lvl_zero);
-	unsigned long temp;
 
-	for ( i = 0 ; i < PAGE_SIZE/sizeof(long); i++){
-		if (desc0[i]) {
-			unsigned long *desc1;
-			struct page *desc1_page;
 
-			temp = desc0[i] & 0x000FFFFFFFFFFC00LL;
-			printk("L0: [%d] %lx  %lx\n",i, desc0[i], temp);
-
-			desc1_page = phys_to_page(temp);
-			desc1 = kmap(desc1_page);
-			for (j = 0 ; j < PAGE_SIZE/sizeof(long); j++){
-				if (desc1[j]){
-					unsigned long *desc2;
-					struct page *desc2_page;
-
-					temp = desc1[i] & 0x000FFFFFFFFFFC00LL;
-
-					desc2_page = phys_to_page(temp);
-					desc2 = kmap(desc2_page);
-
-					for (k = 0 ; k < PAGE_SIZE/sizeof(long); k++){
-						if (desc2[k]){
-							struct page *desc3_page;
-							unsigned long *desc3;
-
-							temp = desc2[k] & 0x000FFFFFFFFFFC00LL;
-
-							desc3_page = phys_to_page(temp);
-
-							desc3 = kmap(desc3_page);
-							for (n = 0 ; n < PAGE_SIZE/sizeof(long); n++){
-								if (desc3[k]){
-									temp = desc3[k] & 0x000FFFFFFFFFFC00LL;
-								}
-							}
-							printk("L3: [%d] %lx  %lx\n",k, desc3[n], temp);
-							kunmap(desc3_page);
-						}
-					}
-					printk("L2: %lx  %lx\n", desc2[k-1], desc2[0]);
-					kunmap(desc2_page);
-				}
-			}
-			printk("L1: %lx ... %lx\n", desc1[j-1], desc1[0]);
-			kunmap(desc1_page);
-		}
-	}
-	kunmap(vm->pg_lvl_zero);
-}
 
 /*
  * walk on the IPA and map it to the hypervisor
  */
-void walk_on_ipa(struct hyplet_vm *vm)
+int map_ipa_to_el2(struct hyplet_vm *vm)
 {
 	int i,j,k, n;
-	unsigned long *desc0 = kmap(vm->pg_lvl_zero);
+	unsigned long *desc0 = vm->ipa_desc_zero;
 	unsigned long temp;
+
+	if ( create_hyp_mappings(desc0,
+			(void *)((unsigned long)desc0 + PAGE_SIZE- 1), PAGE_HYP) ){
+
+		printk("Failed to map desc0\n");
+		return -1;
+	}
 
 	for ( i = 0 ; i < PAGE_SIZE/sizeof(long); i++){
 		if (desc0[i]) {
@@ -274,7 +226,7 @@ void walk_on_ipa(struct hyplet_vm *vm)
 
 
 			create_hyp_mappings(desc1,
-					(unsigned long)desc1 + PAGE_SIZE- 1, PAGE_HYP);
+					(void *)((unsigned long)desc1 + PAGE_SIZE - 1), PAGE_HYP);
 
 			for (j = 0 ; j < PAGE_SIZE/sizeof(long); j++){
 				if (desc1[j]){
@@ -286,7 +238,7 @@ void walk_on_ipa(struct hyplet_vm *vm)
 					desc2_page = phys_to_page(temp);
 					desc2 = kmap(desc2_page);
 					create_hyp_mappings(desc2,
-							(unsigned long)desc2 + PAGE_SIZE- 1, PAGE_HYP);
+							(void *)((unsigned long)desc2 + PAGE_SIZE- 1), PAGE_HYP);
 
 
 					for (k = 0 ; k < PAGE_SIZE/sizeof(long); k++){
@@ -299,7 +251,7 @@ void walk_on_ipa(struct hyplet_vm *vm)
 							desc3_page = phys_to_page(temp);
 							desc3 = kmap(desc3_page);
 							create_hyp_mappings(desc2,
-									(unsigned long)desc2 + PAGE_SIZE- 1, PAGE_HYP);
+									(void *)((unsigned long)desc2 + PAGE_SIZE- 1), PAGE_HYP);
 
 
 							for (n = 0 ; n < PAGE_SIZE/sizeof(long); n++){
@@ -319,7 +271,5 @@ void walk_on_ipa(struct hyplet_vm *vm)
 			kunmap(desc1_page);
 		}
 	}
-	kunmap(vm->pg_lvl_zero);
+	return 0;
 }
-
-

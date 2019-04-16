@@ -10,12 +10,60 @@
 #include "hyp_mmu.h"
 
 /*
+ * Call in EL2 context.
+ * Walk on the page table and set each page to readonly
+ */
+void __hyp_text   walk_ipa_el2(struct hyplet_vm *vm)
+{
+	int i,j ,k, n;
+	unsigned long *desc0 = (unsigned long *)KERN_TO_HYP(vm->ipa_desc_zero);
+	unsigned long temp;
+	unsigned long *desc1;
+	unsigned long *desc2;
+	unsigned long *desc3;
+
+	desc0[2]= 0x7;
+	mb();
+	for ( i = 0 ; i < PAGE_SIZE/sizeof(long); i++){
+
+		if (desc0[i]) {
+			temp = desc0[i] & 0x000FFFFFFFFFFC00LL;
+
+			desc1 = (unsigned long *)KERN_TO_HYP(phys_to_virt(temp));
+			for (j = 0 ; j < PAGE_SIZE/sizeof(long); j++){
+				if (desc1[j]){
+
+					temp = desc1[i] & 0x000FFFFFFFFFFC00LL;
+					desc2 = (unsigned long *)KERN_TO_HYP(phys_to_virt(temp));
+
+					for (k = 0 ; k < PAGE_SIZE/sizeof(long); k++){
+						if (desc2[k]){
+
+							temp = desc2[k] & 0x000FFFFFFFFFFC00LL;
+							desc3 = (unsigned long *)KERN_TO_HYP(phys_to_virt(temp));
+
+							for (n = 0 ; n < PAGE_SIZE/sizeof(long); n++){
+								if (desc3[k]){
+									temp = desc3[k] & 0x000FFFFFFFFFFC00LL;
+									desc3[k] = temp;
+								}
+							}
+						}
+					}
+				}
+			}
+
+		}
+	}
+}
+
+/*
  * Called in EL2 to handle a faulted address
  */
 int __hyp_text hyplet_handle_abrt(struct hyplet_vm *vm, unsigned long addr)
 {
 //	struct hyplet_driver_handler* hyphnd;
-	return 1;
+	return 0xa;
 }
 
 
@@ -41,7 +89,6 @@ static ssize_t proc_write(struct file *file, const char __user * buffer,
 	 * mark all pages RO
 	*/
 	//make_special_page_desc(phys_addr, S2_PAGE_ACCESS_R);
-	walk_on_ipa(vm);
 	return count;
 }
 

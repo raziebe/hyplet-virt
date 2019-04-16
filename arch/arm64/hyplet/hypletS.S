@@ -350,6 +350,15 @@ ENTRY(hyplet_mdcr_off)
 	ret
 ENDPROC(hyplet_mdcr_off)
 
+ENTRY(hyplet_ipa_set_ro)
+	kern_hyp_va x0
+	push x0,lr
+	mov lr,x0
+	blr lr
+	pop x0,lr
+	ret
+ENDPROC(hyplet_ipa_set_ro)
+
 /*
  *	Executing ISR hyplet
 */

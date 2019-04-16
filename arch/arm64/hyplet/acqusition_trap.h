@@ -5,7 +5,7 @@
 void acqusion_init_procfs(void);
 void acqusition_prep_mmio(char *addr);
 void prepare_special_addresses(struct hyplet_vm *vm);
-void walk_on_ipa(struct hyplet_vm *vm);
+
 void dump_ipa(struct hyplet_vm *vm);
 
 #if defined(RASPBERRY_PI3)

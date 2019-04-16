@@ -268,6 +268,11 @@ static int hyplet_arch_init(void)
 		} else{
 		hyplet_info("Microvisor Initialized\n");
 	}
+	if ( map_ipa_to_el2(this_hyp) ){
+		printk("Failed to map IPA\n");
+		return -1;
+	}
+	hyplet_call_hyp((void *)KERN_TO_HYP(walk_ipa_el2), KERN_TO_HYP(this_hyp));
 	return 0;
 }
 

@@ -142,7 +142,7 @@ struct hyplet_vm {
 	struct task_struct *tsk;
  	struct list_head callbacks_lst;
  	spinlock_t lst_lock;
- 	struct page *pg_lvl_zero;
+ 	unsigned long* ipa_desc_zero;
  	unsigned long pg_lvl_one;
  	struct list_head hyp_addr_lst;
  	unsigned long state __attribute__ ((packed));
@@ -201,7 +201,10 @@ struct hyplet_vm* hyplet_get_vm(void);
 unsigned 	long hyplet_get_tcr_el1(void);
 void 			make_vtcr_el2(struct hyplet_vm *tvm);
 unsigned long __hyp_text get_hyplet_addr(int hyplet_id,struct hyplet_vm * hyp);
-void make_mair_el2(struct hyplet_vm *vm);
+void 	make_mair_el2(struct hyplet_vm *vm);
+int 	map_ipa_to_el2(struct hyplet_vm *vm);
+void 	__hyp_text   walk_ipa_el2(struct hyplet_vm *vm);
+void 	hyplet_ipa_set_ro(void);
 
 #define hyplet_info(fmt, ...) \
 		pr_info("hyplet [%i]: " fmt, raw_smp_processor_id(), ## __VA_ARGS__)
