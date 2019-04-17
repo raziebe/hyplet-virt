@@ -53,6 +53,8 @@
 #include <asm/tlb.h>
 #include <asm/alternative.h>
 
+#define __hyp_text __section(.hyp.text) 
+
 /*
  * We need to be able to catch inadvertent references to memstart_addr
  * that occur (potentially in generic code) before arm64_memblock_init()

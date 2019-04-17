@@ -9,6 +9,15 @@
 #include "acqusition_trap.h"
 #include "hyp_mmu.h"
 
+unsigned long __hyp_text __hyp_phys_to_virt(unsigned long addr,struct hyplet_vm *vm)
+{
+	return ( (unsigned long)((addr) - vm->hyp_memstart_addr) | PAGE_OFFSET );
+}
+
+unsigned long __hyp_text hyp_phys_to_virt(unsigned long addr,struct hyplet_vm *vm)
+{
+	return KERN_TO_HYP( __hyp_phys_to_virt(addr, vm) - KERN_TO_HYP(0)) & HYP_PAGE_OFFSET_MASK;
+}
 /*
  * Call in EL2 context.
  * Walk on the page table and set each page to readonly
@@ -22,37 +31,37 @@ void __hyp_text   walk_ipa_el2(struct hyplet_vm *vm)
 	unsigned long *desc2;
 	unsigned long *desc3;
 
-	desc0[2]= 0x7;
-	mb();
-	for ( i = 0 ; i < PAGE_SIZE/sizeof(long); i++){
+	vm->ipa_pages = 0;
+
+	for (i = 0 ; i < PAGE_SIZE/sizeof(long); i++){
 
 		if (desc0[i]) {
-			temp = desc0[i] & 0x000FFFFFFFFFFC00LL;
+			temp  = desc0[i] & 0x000FFFFFFFFFFC00LL;
+			desc1 =  hyp_phys_to_virt(temp, vm);
 
-			desc1 = (unsigned long *)KERN_TO_HYP(phys_to_virt(temp));
 			for (j = 0 ; j < PAGE_SIZE/sizeof(long); j++){
 				if (desc1[j]){
-
-					temp = desc1[i] & 0x000FFFFFFFFFFC00LL;
-					desc2 = (unsigned long *)KERN_TO_HYP(phys_to_virt(temp));
+					temp = desc1[j] & 0x000FFFFFFFFFFC00LL;
+					desc2 = hyp_phys_to_virt(temp, vm);
 
 					for (k = 0 ; k < PAGE_SIZE/sizeof(long); k++){
+
 						if (desc2[k]){
 
 							temp = desc2[k] & 0x000FFFFFFFFFFC00LL;
-							desc3 = (unsigned long *)KERN_TO_HYP(phys_to_virt(temp));
+							desc3 =  hyp_phys_to_virt(temp, vm);
 
 							for (n = 0 ; n < PAGE_SIZE/sizeof(long); n++){
-								if (desc3[k]){
-									temp = desc3[k] & 0x000FFFFFFFFFFC00LL;
-									desc3[k] = temp;
+								if (desc3[n]){
+									temp = desc3[n] & 0x000FFFFFFFFFFC00LL;
+									//desc3[k] = temp;
+									vm->ipa_pages++;
 								}
 							}
 						}
 					}
 				}
 			}
-
 		}
 	}
 }

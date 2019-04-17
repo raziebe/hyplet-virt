@@ -6,6 +6,8 @@
 #include "hyp_mmu.h"
 #include "hypletS.h"
 
+
+extern s64 memstart_addr;
 //
 // alloc 512 * 4096  = 2MB
 //
@@ -151,6 +153,7 @@ void hyplet_init_ipa(void)
 
 	acqusion_init_procfs();
 	make_vtcr_el2(vm);
+	vm->hyp_memstart_addr = memstart_addr;
 }
 
 
@@ -223,17 +226,18 @@ int map_ipa_to_el2(struct hyplet_vm *vm)
 			temp = desc0[i] & 0x000FFFFFFFFFFC00LL;
 			desc1_page = phys_to_page(temp);
 			desc1 = kmap(desc1_page);
-
-
-			create_hyp_mappings(desc1,
-					(void *)((unsigned long)desc1 + PAGE_SIZE - 1), PAGE_HYP);
+			if ( create_hyp_mappings(desc1,
+					(void *)((unsigned long)desc1 + PAGE_SIZE - 1), PAGE_HYP) ){
+				printk("Failed to map desc1 to EL2\n");
+				return -1;
+			}
 
 			for (j = 0 ; j < PAGE_SIZE/sizeof(long); j++){
 				if (desc1[j]){
 					unsigned long *desc2;
 					struct page *desc2_page;
 
-					temp = desc1[i] & 0x000FFFFFFFFFFC00LL;
+					temp = desc1[j] & 0x000FFFFFFFFFFC00LL;
 
 					desc2_page = phys_to_page(temp);
 					desc2 = kmap(desc2_page);
@@ -250,13 +254,12 @@ int map_ipa_to_el2(struct hyplet_vm *vm)
 
 							desc3_page = phys_to_page(temp);
 							desc3 = kmap(desc3_page);
-							create_hyp_mappings(desc2,
-									(void *)((unsigned long)desc2 + PAGE_SIZE- 1), PAGE_HYP);
-
+							create_hyp_mappings(desc3,
+									(void *)((unsigned long)desc3 + PAGE_SIZE- 1), PAGE_HYP);
 
 							for (n = 0 ; n < PAGE_SIZE/sizeof(long); n++){
-								if (desc3[k]){
-									temp = desc3[k] & 0x000FFFFFFFFFFC00LL;
+								if (desc3[n]){
+									temp = desc3[n] & 0x000FFFFFFFFFFC00LL;
 								}
 							}
 

@@ -69,6 +69,7 @@
 #define HYP_PAGE_OFFSET_MASK	((UL(1) << HYP_PAGE_OFFSET_SHIFT) - 1)
 #define HYP_PAGE_OFFSET		(PAGE_OFFSET & HYP_PAGE_OFFSET_MASK)
 #define KERN_TO_HYP(kva)	((unsigned long)kva - PAGE_OFFSET + HYP_PAGE_OFFSET)
+#define HYP_TO_KERN(hpa)	((unsigned long)hpa + PAGE_OFFSET - HYP_PAGE_OFFSET)
 #define USER_TO_HYP(uva)	(uva)
 #define HYPLET_HCR_FLAGS 	(HCR_RW)
 
@@ -84,6 +85,7 @@
 #define S2_PAGE_ACCESS_RW	0b11
 
 #define __hyp_text __section(.hyp.text) notrace
+
 
 #define __int8  char
 typedef unsigned __int8 UCHAR;
@@ -152,7 +154,8 @@ struct hyplet_vm {
 	unsigned long vttbr_el2;
 	unsigned long hcr_el2;
 	unsigned long mair_el2;
-
+	s64 hyp_memstart_addr;
+	int ipa_pages;
 } __attribute__ ((aligned (8)));
 
 struct hyp_wait{
@@ -205,6 +208,7 @@ void 	make_mair_el2(struct hyplet_vm *vm);
 int 	map_ipa_to_el2(struct hyplet_vm *vm);
 void 	__hyp_text   walk_ipa_el2(struct hyplet_vm *vm);
 void 	hyplet_ipa_set_ro(void);
+unsigned long __hyp_phys_to_virt(unsigned long addr,struct hyplet_vm *vm);
 
 #define hyplet_info(fmt, ...) \
 		pr_info("hyplet [%i]: " fmt, raw_smp_processor_id(), ## __VA_ARGS__)
