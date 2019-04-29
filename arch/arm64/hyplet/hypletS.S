@@ -238,10 +238,11 @@ ENTRY(hyplet_abrt_low)
 	bl hyplet_handle_abrt
 /*
 	skip the faulting command
-*/
+
 	mrs x1, elr_el2
 	add x1, x1, #4
 	msr	elr_el2, x1
+*/
 	pop_registers
 	eret
 ENDPROC(hyplet_abrt_low)

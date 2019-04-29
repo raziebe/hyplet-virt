@@ -18,11 +18,22 @@ unsigned long __hyp_text hyp_phys_to_virt(unsigned long addr,struct hyplet_vm *v
 {
 	return KERN_TO_HYP( __hyp_phys_to_virt(addr, vm) - KERN_TO_HYP(0)) & HYP_PAGE_OFFSET_MASK;
 }
+
+
+static inline long make_special_page_desc(unsigned long real_phyaddr,int s2_rw)
+{
+	unsigned long addr = real_phyaddr;
+
+	return (DESC_AF) | (0b11 << DESC_SHREABILITY_SHIFT) |
+	                ( s2_rw  << DESC_S2AP_SHIFT) | (0b1111 << 2) |
+	                  DESC_TABLE_BIT | DESC_VALID_BIT | addr;
+}
+
 /*
  * Call in EL2 context.
  * Walk on the page table and set each page to readonly
  */
-void __hyp_text   walk_ipa_el2(struct hyplet_vm *vm)
+void __hyp_text   walk_ipa_el2(struct hyplet_vm *vm,int s2_page_access)
 {
 	int i,j ,k, n;
 	unsigned long *desc0 = (unsigned long *)KERN_TO_HYP(vm->ipa_desc_zero);
@@ -37,24 +48,27 @@ void __hyp_text   walk_ipa_el2(struct hyplet_vm *vm)
 
 		if (desc0[i]) {
 			temp  = desc0[i] & 0x000FFFFFFFFFFC00LL;
-			desc1 =  hyp_phys_to_virt(temp, vm);
+			desc1 = (unsigned long *) hyp_phys_to_virt(temp, vm);
 
 			for (j = 0 ; j < PAGE_SIZE/sizeof(long); j++){
 				if (desc1[j]){
 					temp = desc1[j] & 0x000FFFFFFFFFFC00LL;
-					desc2 = hyp_phys_to_virt(temp, vm);
+					desc2 = (unsigned long *)hyp_phys_to_virt(temp, vm);
 
 					for (k = 0 ; k < PAGE_SIZE/sizeof(long); k++){
 
 						if (desc2[k]){
 
 							temp = desc2[k] & 0x000FFFFFFFFFFC00LL;
-							desc3 =  hyp_phys_to_virt(temp, vm);
+							desc3 = (unsigned long *)  hyp_phys_to_virt(temp, vm);
 
 							for (n = 0 ; n < PAGE_SIZE/sizeof(long); n++){
 								if (desc3[n]){
+									/*
+									 * set page access rights to S2_RW.
+									 * */
 									temp = desc3[n] & 0x000FFFFFFFFFFC00LL;
-									//desc3[k] = temp;
+									desc3[n] = make_special_page_desc(temp, s2_page_access);
 									vm->ipa_pages++;
 								}
 							}
@@ -69,37 +83,27 @@ void __hyp_text   walk_ipa_el2(struct hyplet_vm *vm)
 /*
  * Called in EL2 to handle a faulted address
  */
-int __hyp_text hyplet_handle_abrt(struct hyplet_vm *vm, unsigned long addr)
+int __hyp_text hyplet_handle_abrt(struct hyplet_vm *vm, unsigned long real_addr)
 {
-//	struct hyplet_driver_handler* hyphnd;
+	// Find the descriptor in the MMU
+	// desc = reverse_map_ipa(vm, real_addr);
+	// return descriptor to its RW
+	// copy its content
 	return 0xa;
-}
-
-
-static long make_special_page_desc(unsigned long real_phyaddr,int s2_rw)
-{
-	unsigned long addr = real_phyaddr;
-
-	return (DESC_AF) | (0b11 << DESC_SHREABILITY_SHIFT) |
-	                ( s2_rw  << DESC_S2AP_SHIFT) | (0b1111 << 2) |
-	                  DESC_TABLE_BIT | DESC_VALID_BIT | addr;
 }
 
 /* user interface  */
 static struct proc_dir_entry *procfs = NULL;
-
+/*
 static ssize_t proc_write(struct file *file, const char __user * buffer,
 			  size_t count, loff_t * dummy)
 {
 	struct hyplet_vm *vm;
 
 	vm = hyplet_get_vm();
-	/*
-	 * mark all pages RO
-	*/
-	//make_special_page_desc(phys_addr, S2_PAGE_ACCESS_R);
 	return count;
 }
+*/
 
 static int proc_open(struct inode *inode, struct file *filp)
 {
@@ -119,8 +123,8 @@ static ssize_t proc_read(struct file *filp, char __user * page,
 
 	for_each_possible_cpu(cpu){
 		vm = hyplet_get(cpu);
-	//	len += sprintf(page + len,
-		//		"%d LastCurrent\n");
+		len += sprintf(page + len,
+				"%d pages\n", vm->ipa_pages);
 	}
 
 	filp->private_data = 0x00;
@@ -131,9 +135,9 @@ static ssize_t proc_read(struct file *filp, char __user * page,
 static struct file_operations acqusition_proc_ops = {
 	.open = proc_open,
 	.read = proc_read,
-	.write = proc_write,
+//	.write = proc_write,
 };
-
+/*
 
 static ssize_t acqusition_ops_write(struct file *filp,
 	const char __user *umem, size_t size, loff_t *off)
@@ -159,16 +163,18 @@ static struct file_operations acqusition_ops = {
 
 int acqusition_ops_major = 0;
 
-
+*/
 void acqusion_init_procfs(void)
 {
 	procfs = proc_create_data("hyplet_stats", 
 			O_RDWR, NULL, &acqusition_proc_ops, NULL);
-	
+	/*
 	acqusition_ops_major = register_chrdev(0, "acqusition", &acqusition_ops);
 	if (acqusition_ops_major < 0){
 		printk(MODULE_NAME "Failed to create acqusition procfs");
 	}
+	*/
 }
+
 
 

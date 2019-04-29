@@ -154,7 +154,7 @@ struct hyplet_vm {
 	unsigned long vttbr_el2;
 	unsigned long hcr_el2;
 	unsigned long mair_el2;
-	s64 hyp_memstart_addr;
+	s64 hyp_memstart_addr;	/* memstart_addr is use deduct the physical address */
 	int ipa_pages;
 } __attribute__ ((aligned (8)));
 
@@ -206,8 +206,8 @@ void 			make_vtcr_el2(struct hyplet_vm *tvm);
 unsigned long __hyp_text get_hyplet_addr(int hyplet_id,struct hyplet_vm * hyp);
 void 	make_mair_el2(struct hyplet_vm *vm);
 int 	map_ipa_to_el2(struct hyplet_vm *vm);
-void 	__hyp_text   walk_ipa_el2(struct hyplet_vm *vm);
-void 	hyplet_ipa_set_ro(void);
+void 	__hyp_text   walk_ipa_el2(struct hyplet_vm *vm,int s2_page_access);
+
 unsigned long __hyp_phys_to_virt(unsigned long addr,struct hyplet_vm *vm);
 
 #define hyplet_info(fmt, ...) \
