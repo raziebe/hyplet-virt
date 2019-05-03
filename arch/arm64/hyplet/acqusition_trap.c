@@ -16,7 +16,9 @@ unsigned long __hyp_text __hyp_phys_to_virt(unsigned long addr,struct hyplet_vm 
 
 unsigned long __hyp_text hyp_phys_to_virt(unsigned long addr,struct hyplet_vm *vm)
 {
-	return KERN_TO_HYP( __hyp_phys_to_virt(addr, vm) - KERN_TO_HYP(0)) & HYP_PAGE_OFFSET_MASK;
+	if (is_hyp())
+		return KERN_TO_HYP( __hyp_phys_to_virt(addr, vm) - KERN_TO_HYP(0)) & HYP_PAGE_OFFSET_MASK;
+	return phys_to_virt(addr);
 }
 
 
@@ -27,6 +29,38 @@ static inline long make_special_page_desc(unsigned long real_phyaddr,int s2_rw)
 	return (DESC_AF) | (0b11 << DESC_SHREABILITY_SHIFT) |
 	                ( s2_rw  << DESC_S2AP_SHIFT) | (0b1111 << 2) |
 	                  DESC_TABLE_BIT | DESC_VALID_BIT | addr;
+}
+
+/*
+ * Given a physical address, search in the page table
+ * and find the page descriptor and change its access rights
+ */
+unsigned long*  ipa_find_page_desc(struct hyplet_vm *vm,unsigned long phy_addr, int access)
+{
+	int i,j ,k;
+	unsigned long temp;
+	unsigned long *desc1;
+	unsigned long *desc2;
+	unsigned long *desc3;
+
+	// assume starting at level 1
+	desc1  = (unsigned long *)(page_to_virt(vm->pg_lvl_one));
+
+	i = phy_addr / 0x40000000; // 1GB
+	temp = desc1[i]  & 0x000FFFFFFFFFFC00LL;
+	printk("desc1[%d]=%p\n", i, temp);
+
+	desc2 = (unsigned long *) hyp_phys_to_virt(temp, vm);
+	j = (phy_addr & 0x3FFFFFFF) / 0x200000; // 2MB
+	temp = desc2[j]  & 0x000FFFFFFFFFFC00LL;
+
+	desc3 = (unsigned long *) hyp_phys_to_virt(temp, vm);
+	printk("desc2[%d]=%p\n",j, temp);
+	k = (phy_addr & 0x1FFFFF) / PAGE_SIZE;
+
+	printk("desc3[%d] is at %p\n",k, &desc3[k]);
+
+	return &desc3[k];
 }
 
 /*

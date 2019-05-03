@@ -207,7 +207,8 @@ unsigned long __hyp_text get_hyplet_addr(int hyplet_id,struct hyplet_vm * hyp);
 void 	make_mair_el2(struct hyplet_vm *vm);
 int 	map_ipa_to_el2(struct hyplet_vm *vm);
 void 	__hyp_text   walk_ipa_el2(struct hyplet_vm *vm,int s2_page_access);
-
+unsigned long*  ipa_find_page_desc(struct hyplet_vm *vm,unsigned long phy_addr, int access);
+int is_hyp(void);
 unsigned long __hyp_phys_to_virt(unsigned long addr,struct hyplet_vm *vm);
 
 #define hyplet_info(fmt, ...) \

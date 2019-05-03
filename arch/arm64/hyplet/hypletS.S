@@ -230,10 +230,18 @@ ENTRY(hyplet_abrt_low)
 /*
 * Peform virtual to physical
 */
-	mrs x0, far_el2
-	at  S1E1R, x0
+
+/* 	far_el2 holds the faulting Virtual Address for
+	 all synchronous Instruction or Data Abort
+*/
+	mrs x1, far_el2
+/* 	 par_el2 eturns the output address (OA) from an
+	 Address translation instruction that executed successfully
+*/
+	at  S1E1R, x1
 	mrs	x1, par_el1
-	kern_hyp_va x1
+//	kern_hyp_va x1
+
 	mrs x0, tpidr_el2
 	bl hyplet_handle_abrt
 /*

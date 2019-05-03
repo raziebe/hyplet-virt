@@ -272,9 +272,12 @@ static int hyplet_arch_init(void)
 		printk("Failed to map IPA\n");
 		return -1;
 	}
+
+	printk("IPA: find desc  %p\n",
+			ipa_find_page_desc(this_hyp, 0x30500400LL, 0));
 	// Mark all pages RO
-	hyplet_call_hyp((void *)KERN_TO_HYP(walk_ipa_el2), KERN_TO_HYP(this_hyp),
-			S2_PAGE_ACCESS_R);
+//	hyplet_call_hyp((void *)KERN_TO_HYP(walk_ipa_el2), KERN_TO_HYP(this_hyp),
+	//		S2_PAGE_ACCESS_R);
 	return 0;
 }
 
