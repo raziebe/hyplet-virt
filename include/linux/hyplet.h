@@ -146,6 +146,7 @@ struct hyplet_vm {
  	spinlock_t lst_lock;
  	unsigned long* ipa_desc_zero;
  	unsigned long pg_lvl_one;
+ 	unsigned long *vttbr_el2_kern;
  	struct list_head hyp_addr_lst;
  	unsigned long state __attribute__ ((packed));
 	unsigned long faulty_elr_el2 __attribute__ ((packed));
