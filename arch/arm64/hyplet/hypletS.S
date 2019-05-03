@@ -173,10 +173,28 @@ ENDPROC(hyplet_get_tcr_el1)
 ENTRY(hyplet_invld_tlb)
 	tlbi vae2, x0
 	dsb sy
-    	tlbi vale2, x0
+    tlbi vale2, x0
 	dsb sy
 	ret
 ENDPROC(hyplet_invld_tlb)
+
+// called in EL2
+ENTRY(hyplet_invld_ipa_tlb)
+	tlbi vmalle1is
+	dsb  ish
+	isb
+	ret
+ENDPROC(hyplet_invld_ipa_tlb)
+
+
+ENTRY(hyplet_invld_tlb_el1)
+	tlbi vae1, x0
+	dsb sy
+    tlbi vale1, x0
+	dsb sy
+	ret
+ENDPROC(hyplet_invld_tlb_el1)
+
 
 ENTRY(hyplet_invld_all_tlb)
 	tlbi alle2
@@ -204,9 +222,9 @@ ENTRY(hyplet_clear_cache)
         push   x2, x3
 
         mrs    x3, ctr_el0
-        ubfx   x3, x3,#16,#4  // x3  = DminLine
-        mov    x2, #4         // x2=word size
-        lsl    x2, x2, x3     // x2 = smallet cache line size
+        ubfx   x3, x3,#16,#4  // x3 = DminLine
+        mov    x2, #4         // x2 = Word size
+        lsl    x2, x2, x3     // x2 = Smallet cache line size
 
         add     x1, x0, x1    // end
         tlbi    vaae1 ,x0
@@ -218,8 +236,8 @@ ENTRY(hyplet_clear_cache)
         cmp     x0, x1
         b.lo    1b
 
-        pop x2,        x3
-        pop x1,        x0
+        pop 	x2, x3
+        pop 	x1, x0
         isb
         ret
 ENDPROC(hyplet_clear_cache)
@@ -234,15 +252,16 @@ ENTRY(hyplet_abrt_low)
 /* 	far_el2 holds the faulting Virtual Address for
 	 all synchronous Instruction or Data Abort
 */
+	mrs x0, far_el2
 	mrs x1, far_el2
-/* 	 par_el2 eturns the output address (OA) from an
+
+/* 	 par_el2 returns the output address (OA) from an
 	 Address translation instruction that executed successfully
 */
 	at  S1E1R, x1
 	mrs	x1, par_el1
-//	kern_hyp_va x1
-
 	mrs x0, tpidr_el2
+
 	bl hyplet_handle_abrt
 /*
 	skip the faulting command
@@ -251,6 +270,7 @@ ENTRY(hyplet_abrt_low)
 	add x1, x1, #4
 	msr	elr_el2, x1
 */
+
 	pop_registers
 	eret
 ENDPROC(hyplet_abrt_low)

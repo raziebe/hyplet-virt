@@ -153,7 +153,7 @@ void hyplet_init_ipa(void)
 		vm->vttbr_el2 = page_to_phys((struct page *) vm->pg_lvl_one) | (vmid << 48);
 		vm->vttbr_el2_kern =  (unsigned long *)(page_to_virt(vm->pg_lvl_one));
 	}
-	;
+
 	acqusion_init_procfs();
 	make_vtcr_el2(vm);
 	vm->hyp_memstart_addr = memstart_addr;

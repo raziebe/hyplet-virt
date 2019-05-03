@@ -8,6 +8,7 @@
 #include <linux/cdev.h>
 #include "acqusition_trap.h"
 #include "hyp_mmu.h"
+#include "hypletS.h"
 
 unsigned long __hyp_text __hyp_phys_to_virt(unsigned long addr,struct hyplet_vm *vm)
 {
@@ -35,7 +36,7 @@ static inline long make_special_page_desc(unsigned long real_phyaddr,int s2_rw)
  * Given a physical address, search in the page table
  * and find the page descriptor and change its access rights
  */
-unsigned long*  __hyp_text  ipa_find_page_desc(struct hyplet_vm *vm,unsigned long phy_addr, int access)
+unsigned long*  __hyp_text  ipa_find_page_desc(struct hyplet_vm *vm,unsigned long phy_addr)
 {
 	int i,j ,k;
 	unsigned long temp;
@@ -45,7 +46,7 @@ unsigned long*  __hyp_text  ipa_find_page_desc(struct hyplet_vm *vm,unsigned lon
 
 	desc1  = vm->vttbr_el2_kern;
 	if (is_hyp())
-		desc1  = KERN_TO_HYP(vm->vttbr_el2_kern);
+		desc1  = (unsigned long*)KERN_TO_HYP(vm->vttbr_el2_kern);
 
 	i = phy_addr / 0x40000000; // 1GB
 	temp = desc1[i]  & 0x000FFFFFFFFFFC00LL;
@@ -118,13 +119,30 @@ void __hyp_text   walk_ipa_el2(struct hyplet_vm *vm,int s2_page_access)
 /*
  * Called in EL2 to handle a faulted address
  */
-int __hyp_text hyplet_handle_abrt(struct hyplet_vm *vm, unsigned long real_addr)
+int __hyp_text hyplet_handle_abrt(struct hyplet_vm *vm,
+		unsigned long phy_addr,unsigned long vaddr)
 {
+	unsigned long* desc;
+
+	// first clean the attributes bits: address is in bits 47..12
+	phy_addr &= 0xFFFFFFFFFC00;
+
 	// Find the descriptor in the MMU
-	// desc = reverse_map_ipa(vm, real_addr);
+	desc = ipa_find_page_desc(vm, phy_addr);
 	// return descriptor to its RW
+	*desc = make_special_page_desc(phy_addr, S2_PAGE_ACCESS_RW);
+	hyplet_invld_ipa_tlb(phy_addr >> 12);
 	// copy its content
 	return 0xa;
+}
+
+void test_ipa_settings(void)
+{
+	unsigned long phy_addr = 0xF4B5ED00;
+	unsigned long *desc;
+	desc = ipa_find_page_desc(hyplet_get_vm(), phy_addr);
+	*desc = make_special_page_desc(phy_addr,S2_PAGE_ACCESS_R);
+	mb();
 }
 
 /* user interface  */
