@@ -157,6 +157,7 @@ struct hyplet_vm {
 	unsigned long mair_el2;
 	s64 hyp_memstart_addr;	/* memstart_addr is use deduct the physical address */
 	int ipa_pages;
+	int ipa_pages_processed;
 } __attribute__ ((aligned (8)));
 
 struct hyp_wait{

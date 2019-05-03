@@ -132,6 +132,7 @@ int __hyp_text hyplet_handle_abrt(struct hyplet_vm *vm,
 	// return descriptor to its RW
 	*desc = make_special_page_desc(phy_addr, S2_PAGE_ACCESS_RW);
 	hyplet_invld_ipa_tlb(phy_addr >> 12);
+	vm->ipa_pages_processed++;
 	// copy its content
 	return 0xa;
 }
@@ -177,7 +178,8 @@ static ssize_t proc_read(struct file *filp, char __user * page,
 	for_each_possible_cpu(cpu){
 		vm = hyplet_get(cpu);
 		len += sprintf(page + len,
-				"%d pages\n", vm->ipa_pages);
+				"%d pages processed = %d\n",
+				vm->ipa_pages,vm->ipa_pages_processed);
 	}
 
 	filp->private_data = 0x00;
