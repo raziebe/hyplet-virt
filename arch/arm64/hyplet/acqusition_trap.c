@@ -50,17 +50,13 @@ unsigned long*  __hyp_text  ipa_find_page_desc(struct hyplet_vm *vm,unsigned lon
 
 	i = phy_addr / 0x40000000; // 1GB
 	temp = desc1[i]  & 0x000FFFFFFFFFFC00LL;
-//	printk("desc1[%d]=%p\n", i, temp);
 
 	desc2 = (unsigned long *) hyp_phys_to_virt(temp, vm);
 	j = (phy_addr & 0x3FFFFFFF) / 0x200000; // 2MB
 	temp = desc2[j]  & 0x000FFFFFFFFFFC00LL;
 
 	desc3 = (unsigned long *) hyp_phys_to_virt(temp, vm);
-//	printk("desc2[%d]=%p\n",j, temp);
 	k = (phy_addr & 0x1FFFFF) / PAGE_SIZE;
-
-//	printk("desc3[%d] is at %p\n",k, &desc3[k]);
 
 	return &desc3[k];
 }

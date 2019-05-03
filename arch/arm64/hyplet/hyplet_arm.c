@@ -272,6 +272,17 @@ static int hyplet_arch_init(void)
 		printk("Failed to map IPA\n");
 		return -1;
 	}
+
+	for_each_possible_cpu(cpu) {
+		if (raw_smp_processor_id() == cpu)
+			continue;
+		hyp = hyplet_get(cpu);
+		hyp->ipa_desc_zero =  this_hyp->ipa_desc_zero;
+		hyp->vttbr_el2_kern = this_hyp->vttbr_el2_kern;
+		hyp->vttbr_el2 	   = this_hyp->vttbr_el2;
+		hyp->hyp_memstart_addr = this_hyp->hyp_memstart_addr;
+	}
+
 	test_ipa_settings();
 	// Mark all pages RO
 	hyplet_call_hyp((void *)KERN_TO_HYP(walk_ipa_el2), KERN_TO_HYP(this_hyp),
