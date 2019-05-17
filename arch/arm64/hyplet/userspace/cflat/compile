@@ -1,4 +1,6 @@
 source ../setup_env
 $CC --static  -I ../../../../include elf.c cflat.c ../utils/hyplet_utilsS.S ../utils/hyplet_utils.c -o cflat
 $CC --static  -I ../../../../include elf.c test_cflat64.c ../utils/hyplet_utilsS.S ../utils/hyplet_utils.c -o test_cflat64
-$CC32 --static test_cflat32.c -o test_cflat32
+$CC32 -c test_cflat32.c
+$CC32 -c cflat32.c 
+$CC32 --static test_cflat32.o cflat32.o -o test_cflat32
