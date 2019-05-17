@@ -14,13 +14,15 @@
 int func_id = 8;
 
 __attribute__ ((section("hyp_rw")))  unsigned int cnt = 0;
-__attribute__ ((section("hyp_rw")))  unsigned long instr[NR_OPCODES][3] = {0};
+__attribute__ ((section("hyp_rw")))  unsigned long instr[NR_OPCODES][4] = {0};
 
-__attribute__ ((section("hyp_rx")))  long record_opcode(long fault_addr,long a,long b)
+__attribute__ ((section("hyp_rx")))  long record_opcode(long a1,long a2,long a3,long a4)
 {
-	instr[cnt][0] = fault_addr;
-	instr[cnt][1] = a;
-	instr[cnt++][2] = b;
+	instr[cnt][0] = a1;
+	instr[cnt][1] = a2;
+	instr[cnt][2] = a3;
+	instr[cnt][3] = a4;
+	cnt++;
 	return 0;
 }
 
@@ -133,13 +135,21 @@ int main(int argc, char *argv[])
 	return -1;
     }
 
+    for (i = 0 ; i < NR_OPCODES; i++) {
+	instr[i][0] = -1;
+	instr[i][1] = -1;
+	instr[i][2] = -1;
+	instr[i][3] = -1;
+    }
+
     printf("\nHyplet set. Prepare to run trap\n");
     while(cnt == 0){
 	sleep(1);
     }
 
     for (i = 0; i < cnt ; i++)
-   	 printf("DATA %d) %lx,%lx,%lx\n",cnt, 
-			instr[i][0],   instr[i][1],  instr[i][2] );
+   	 printf("DATA %d) %lx,%lx,%lx %lx\n",cnt, 
+			instr[i][0], instr[i][1],  
+			instr[i][2], instr[i][3] );
     sleep(1);
 }
