@@ -133,6 +133,7 @@ int create_hyp_user_mappings(void *,void*,pgprot_t prot);
 int __create_hyp_mappings(pgd_t *pgdp,
 				 unsigned long start, unsigned long end,
 				 unsigned long pfn, pgprot_t prot);
+int __hyplet_map_user_data(long umem,int size,int flags,struct hyplet_vm *hyp);
 
 #define USER_TO_HYP(uva)	(uva)
 #endif
