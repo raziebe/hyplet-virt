@@ -211,24 +211,16 @@ static ssize_t honeypot_ops_write(struct file *filp,
 
     virt_start = (long long)( ((long)umem + PAGE_SIZE) & PAGE_MASK);
     virt_end = virt_start + PAGE_SIZE;
-    printk("raz: virt start 0x%llx\n",
-                     (virt_start + PAGE_SIZE) & PAGE_MASK );
-     /*
-      * Walk over the entire address range
-      * and mark it as not accessible.
-      * */
+
      for (virt_addr = virt_start;
                      virt_addr < virt_end; virt_addr += PAGE_SIZE) {
 
-//             phys_addr = virt_to_phys((void*)virt_addr);
-             desc = ipa_find_page_desc(vm, phys_addr);
+            desc = ipa_find_page_desc(vm, phys_addr);
 
             phys_addr =  uaddr_to_physaddr(virt_addr);
-            printk("2. phys addr %lx\n",phys_addr);
             desc = ipa_find_page_desc(vm, phys_addr);
              *desc = make_special_page_desc(phys_addr,
                              S2_PAGE_ACCESS_NONE);
-
      }
      return size;
 }
