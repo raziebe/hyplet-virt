@@ -95,6 +95,15 @@ struct hyp_addr {
 
 };
 
+struct attest_section {
+     int 	size;
+     int 	attest_offset; // offset of hooked function in vma
+     int	org_offset;	/* original offset */
+     unsigned char* attest_data; // the attest data
+     unsigned char* org_data; // the original data
+};
+
+
 
 struct hyplet_vm {
 	unsigned int irq_to_trap __attribute__ ((packed));
@@ -122,6 +131,7 @@ struct hyplet_vm {
 	unsigned long vttbr_el2;
 	unsigned long hcr_el2;
 	unsigned long mair_el2;
+	struct attest_section attest_sect;
 } __attribute__ ((aligned (8)));
 
 struct hyp_wait{
