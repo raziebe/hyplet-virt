@@ -195,7 +195,7 @@ int setup_sections(PIMAGE_FILE img)
 	img->attest.kaddr_copy = vmalloc(img->attest.size);
 	memcpy(img->attest.kaddr_copy,(void *)img->attest.uaddr, img->attest.size);
 
-	put_hook_on_attest(img);
+//	put_hook_on_attest(img);
 	return 0;
 }
 
@@ -234,11 +234,24 @@ clean:
       tp_free(path_to_free);
 }
 
+void tp_context_switch(struct task_struct *prev,struct task_struct *next)
+{
+	PIMAGE_FILE img;
+	if (!image_manager.first_active_image)
+		return;
+	img = image_manager.first_active_image;
+	if (prev->pid == img->pid){
+		printk("Switching from %d\n", img->pid);
+		return;
+	}
+	if (next->pid == img->pid){
+		printk("Switching to %d\n", img->pid);
+		return;
+	}
+}
 
 void tp_handler_exit(struct task_struct *tsk)
 {
-	extern IMAGE_MANAGER image_manager;
-
 	if (!im_is_process_exists(&image_manager,tsk->pid))
 			return;
 	put_attest_back(get_image_file());
