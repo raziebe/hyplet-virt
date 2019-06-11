@@ -24,7 +24,6 @@ void im_add_image(PIMAGE_MANAGER manager, UINT64 pid,  PIMAGE_FILE img)
 {
 	img->pid = pid;
 	manager->first_active_image =  img;
-
 }
 
 BOOLEAN im_is_process_exists(PIMAGE_MANAGER manager, size_t pid)
@@ -40,8 +39,8 @@ void im_remove_process(PIMAGE_MANAGER manager, size_t pid)
 	if (!im_is_process_exists(manager,pid))
 		return;
 	img = manager->first_active_image;
-	vfree(img->attest.kaddr_copy);
-	vfree(img->hooked.kaddr_copy);
+	vfree(img->nop.kaddr_copy);
+	vfree(img->trap.kaddr_copy);
 	im_free_image(manager->first_active_image);
 	manager->first_active_image = NULL;
 }

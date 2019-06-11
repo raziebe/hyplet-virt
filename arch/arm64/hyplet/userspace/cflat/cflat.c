@@ -143,13 +143,12 @@ int main(int argc, char *argv[])
     }
 
     printf("\nHyplet set. Prepare to run trap\n");
-    while(cnt == 0){
+    while(cnt <= 1){
 	sleep(1);
     }
-
+    sleep(10);
     for (i = 0; i < cnt ; i++)
-   	 printf("DATA %d) %lx,%lx,%lx %lx\n",cnt, 
+   	 printf("DATA %d) %lx,%lx,%lx %lx\n",i, 
 			instr[i][0], instr[i][1],  
 			instr[i][2], instr[i][3] );
-    sleep(1);
 }

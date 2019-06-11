@@ -171,31 +171,25 @@ void* get_image_file(void)
 	return image_manager.first_active_image;
 }
 
-void put_hook_on_attest(PIMAGE_FILE img)
+void put_nop(PIMAGE_FILE img)
 {
-	memcpy((char *)(img->attest.uaddr) ,(char *)(img->hooked.kaddr_copy),img->attest.size);
+	memcpy((char *)(img->trap.uaddr) ,(char *)(img->nop.kaddr_copy),img->nop.size);
 }
 
-void put_attest_back(PIMAGE_FILE img)
+void put_trap(PIMAGE_FILE img)
 {
-	memcpy((char *)(img->attest.uaddr) ,(char *)(img->attest.kaddr_copy),img->attest.size);
+	memcpy((char *)(img->trap.uaddr) ,(char *)(img->trap.kaddr_copy),img->nop.size);
 }
 
 int setup_sections(PIMAGE_FILE img)
 {
-	/*
-	 *  Copy.attest to kernel. We do not walk on the pages here.
-	 *    The reason is because pages in 32bit over 64bit kernel are 2MB.
-	 *    So, there is no real kmap infrastructure for 2MB. so , we just memcpy
-	 *    and make sure the memcpy is in the context of verified process.
-	 */
-	img->hooked.kaddr_copy = vmalloc(img->hooked.size);
-	memcpy(img->hooked.kaddr_copy, img->hooked.uaddr, img->hooked.size);
+	img->nop.kaddr_copy = vmalloc(img->nop.size);
+	memcpy(img->nop.kaddr_copy, img->nop.uaddr, img->nop.size);
 
-	img->attest.kaddr_copy = vmalloc(img->attest.size);
-	memcpy(img->attest.kaddr_copy,(void *)img->attest.uaddr, img->attest.size);
+	img->trap.kaddr_copy = vmalloc(img->trap.size);
+	memcpy(img->trap.kaddr_copy,(void *)img->trap.uaddr, img->trap.size);
 
-//	put_hook_on_attest(img);
+	put_trap(img);
 	return 0;
 }
 
@@ -254,7 +248,7 @@ void tp_handler_exit(struct task_struct *tsk)
 {
 	if (!im_is_process_exists(&image_manager,tsk->pid))
 			return;
-	put_attest_back(get_image_file());
+	put_trap(get_image_file());
 	im_remove_process(&image_manager,tsk->pid);
 }
 

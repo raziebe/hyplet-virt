@@ -1809,9 +1809,9 @@ static int do_execveat_common(int fd, struct filename *filename,
 	putname(filename);
 	if (displaced)
 		put_files_struct(displaced);
-        {
-	void tp_execve_handler(unsigned long retval);
-	tp_execve_handler(retval);
+	{
+		void tp_execve_handler(unsigned long retval);
+		tp_execve_handler(retval);
 	}
 	return retval;
 

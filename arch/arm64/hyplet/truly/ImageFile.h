@@ -13,8 +13,8 @@ struct cflat_section{
 
 struct _IMAGE_FILE {
 
-	struct cflat_section hooked;
-	struct cflat_section attest;
+	struct cflat_section nop;
+	struct cflat_section trap;
 
 
 	size_t 	code_base;
