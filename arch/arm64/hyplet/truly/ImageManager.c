@@ -1,5 +1,6 @@
 #include "ImageManager.h"
 #include <linux/hyplet.h>
+#include <linux/highmem.h>
 
 void im_init(PIMAGE_MANAGER manager,
 	           void *driver_context,
@@ -39,8 +40,10 @@ void im_remove_process(PIMAGE_MANAGER manager, size_t pid)
 	if (!im_is_process_exists(manager,pid))
 		return;
 	img = manager->first_active_image;
-	vfree(img->nop.kaddr_copy);
-	vfree(img->trap.kaddr_copy);
+	if (img->trap.kernel_addr != NULL){
+		kunmap_atomic(img->trap.kernel_addr);
+	}
+
 	im_free_image(manager->first_active_image);
 	manager->first_active_image = NULL;
 }

@@ -62,6 +62,7 @@ PIMAGE_FILE image_file_init(void* data)
 	image_file = (PIMAGE_FILE)tp_alloc(sizeof(IMAGE_FILE));
 	if (image_file == NULL)
 		return NULL;
+	memset(image_file,0x00,sizeof(IMAGE_FILE));
 
 	image_file->nop.uaddr  = nop_section;
 	image_file->nop.offset = nop_offset;

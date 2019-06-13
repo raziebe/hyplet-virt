@@ -19,7 +19,7 @@
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
 #include <linux/vmalloc.h>
-#include <linux/version.h>
+#include <asm/tlbflush.h>
 #include <linux/kallsyms.h>
 #include <linux/hyplet.h>
 
@@ -125,6 +125,7 @@ static void vma_tp_load(struct vm_area_struct* vma, void* context)
             goto clean;
 
         grp_type = get_group_by_arch_and_type(arch, type);
+
         fill_img_layout_info (&info,
                               current->pid,
                               vma->vm_start,
@@ -173,24 +174,21 @@ void* get_image_file(void)
 
 void put_nop(PIMAGE_FILE img)
 {
-	memcpy((char *)(img->trap.uaddr) ,(char *)(img->nop.kaddr_copy),img->nop.size);
+	unsigned short nop16 = 0xbf00;
+
+	printk("Put nop\n");
+	memcpy(img->trap.kernel_addr, &nop16, sizeof(nop16) );
 }
 
 void put_trap(PIMAGE_FILE img)
 {
-	memcpy((char *)(img->trap.uaddr) ,(char *)(img->trap.kaddr_copy),img->nop.size);
-}
+	unsigned short bkpt3 = 0xbe03;
 
-int setup_sections(PIMAGE_FILE img)
-{
-	img->nop.kaddr_copy = vmalloc(img->nop.size);
-	memcpy(img->nop.kaddr_copy, img->nop.uaddr, img->nop.size);
+	if (!img->trap.kernel_addr)
+		return;
 
-	img->trap.kaddr_copy = vmalloc(img->trap.size);
-	memcpy(img->trap.kaddr_copy,(void *)img->trap.uaddr, img->trap.size);
-
-	put_trap(img);
-	return 0;
+	printk("Put trap\n");
+	memcpy(img->trap.kernel_addr, &bkpt3 ,2);
 }
 
 void tp_execve_handler(unsigned long ret_value)
@@ -218,7 +216,6 @@ void tp_execve_handler(unsigned long ret_value)
     img = image_file_init(file);
     if(img){
     	im_add_image(&image_manager,current->pid, img);
-    	setup_sections(img);
     	printk("Found %d to be protected\n",current->pid);
    }
 
@@ -228,19 +225,71 @@ clean:
       tp_free(path_to_free);
 }
 
+int locate_trap_code(PIMAGE_FILE img)
+{
+	struct hyplet_vm *vm = hyplet_get_vm();
+/*
+ * 	Currently assume bkpt is in thumbmode, i.e. 16bit
+ * 	unsigned short nop32 = 0xe1a00000;
+*/
+	if (vm->elr_el2 == 0)
+		return 0;
+
+	if (img->trap.kernel_addr == 0) {
+		char *kaddr;
+		int nr,offset;
+		struct page *pg[1];
+
+		nr = get_user_pages_fast(vm->elr_el2,1,0, (struct page **)&pg);
+		if (nr == 0)
+			return 0;
+		kaddr =  (char *)kmap_atomic(pg[0]);
+		offset = vm->elr_el2 & ~PAGE_MASK;
+		printk("elr_el2=%lx nr=%d %p %d\n", vm->elr_el2, nr, kaddr, offset);
+		img->trap.kernel_addr =  kaddr + offset;
+		img->trap.pg = pg[0];
+		img->flags |= CFLAT_FLG_TRAP_MAPPED;
+	}
+	return 1;
+}
+
 void tp_context_switch(struct task_struct *prev,struct task_struct *next)
 {
 	PIMAGE_FILE img;
 	if (!image_manager.first_active_image)
 		return;
+
 	img = image_manager.first_active_image;
-	if (prev->pid == img->pid){
-		printk("Switching from %d\n", img->pid);
+	if (!(prev->pid == img->pid && current->pid == prev->pid)){
 		return;
 	}
-	if (next->pid == img->pid){
-		printk("Switching to %d\n", img->pid);
+
+	printk("Switching prev %d current = %d\n",
+				img->pid,current->pid);
+
+	if (!locate_trap_code(img) )
+			return;
+
+	if (!(img->flags & CFLAT_FLG_TRAP_MAPPED)){
+			/* trap code is not mapped */
+			return;
+	}
+
+	if (img->flags & CFLAT_FLG_UNSET_TRAP) {
+		/*
+		 * user asked to put nop
+		*/
+		put_nop(img);
+		img->flags = (img->flags & ~CFLAT_FLG_UNSET_TRAP);
 		return;
+	}
+
+	if (img->flags & CFLAT_FLG_SET_TRAP) {
+		/*
+		 * User asked to put back trap code
+		 */
+		put_trap(img);
+		img->flags = (img->flags & ~CFLAT_FLG_SET_TRAP);
 	}
 }
 
@@ -248,6 +297,7 @@ void tp_handler_exit(struct task_struct *tsk)
 {
 	if (!im_is_process_exists(&image_manager,tsk->pid))
 			return;
+
 	put_trap(get_image_file());
 	im_remove_process(&image_manager,tsk->pid);
 }

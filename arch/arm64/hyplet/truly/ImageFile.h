@@ -3,12 +3,16 @@
 #include "tp_types.h"
 
 
+#define CFLAT_FLG_TRAP_MAPPED	(1<<1)	/* bkpt code can be accessed from kernel space */
+#define CFLAT_FLG_SET_TRAP		(1<<2)  /* manually triggered. set the trap to on */
+#define CFLAT_FLG_UNSET_TRAP	(1<<3)  /* manually triggered. unset the trap and put nop */
+
 struct cflat_section{
 	char*   uaddr;
 	size_t  offset;
-	char*   kaddr;
-	char*   kaddr_copy;
+	char*   kernel_addr;
 	int 	size;
+	struct page* pg;
 };
 
 struct _IMAGE_FILE {
@@ -20,6 +24,7 @@ struct _IMAGE_FILE {
 	size_t 	code_base;
 	size_t  image_base;
 	int pid;
+	int flags;
 };
 
 
